@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>同行募集 | OTAKU LIVE</title>
+  <style>
+    :root{--card:#15151d;--text:#f7f7fb;--muted:#9da0ad;--accent:#8b5cf6;--accent2:#ec4899;--line:#2a2a36}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:620px;margin:0 auto;padding:24px 16px 64px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px}.field{margin:13px 0}.field label{display:block;font-size:13px;color:#bbb;margin-bottom:6px}.field select,.field input,.field textarea{width:100%;padding:13px;border-radius:13px;border:1px solid var(--line);background:#0f0f15;color:#fff;font-size:15px}.field textarea{min-height:130px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{width:100%;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:15px;font-weight:800;cursor:pointer}.muted{color:var(--muted);font-size:13px;line-height:1.6}.back{display:inline-block;color:#aaa;text-decoration:none;margin-bottom:16px}.msg{margin-top:10px;color:#ddd}@media(max-width:520px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <a id="back" class="back" href="index.html">← 公演へ戻る</a>
+  <section class="card">
+    <h1 style="font-size:22px;margin-top:0">同行者を募集</h1>
+    <div id="eventName" class="muted">公演情報を読み込み中...</div>
+    <div class="field"><label>募集タイプ</label><select id="type"><option value="looking_for_friend">一緒に行く人を探す</option><option value="have_companion_ticket">同行枠があります</option></select></div>
+    <div class="grid">
+      <div class="field"><label>希望する性別</label><select id="gender"><option value="any">指定なし</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
+      <div class="field"><label>同担</label><select id="sameOshi"><option value="any">どちらでも</option><option value="yes">OK</option><option value="no">NG</option></select></div>
+    </div>
+    <div class="grid"><div class="field"><label>希望年齢（下限）</label><input id="ageMin" type="number" min="15" max="99" placeholder="未指定" /></div><div class="field"><label>希望年齢（上限）</label><input id="ageMax" type="number" min="15" max="99" placeholder="未指定" /></div></div>
+    <div class="field"><label>コメント</label><textarea id="body" maxlength="1000" placeholder="例：一人参戦です。開演前から一緒に行動できる方を探しています！"></textarea></div>
+    <button id="submit" class="btn">募集を投稿</button><div id="msg" class="msg"></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
+<script>
+  const eventId=new URLSearchParams(location.search).get('event'); let user=null;
+  async function init(){if(!eventId){location.href='index.html';return}back.href=`event.html?id=${encodeURIComponent(eventId)}`;user=await otakuGetUser();if(!user){location.href=otakuLoginUrl(location.href);return}const p=await otakuGetProfile(user.id);if(!p){location.href=otakuProfileUrl(location.href);return}const {data:e}=await otakuSupabase.from('otaku_events').select('title,venue,starts_at').eq('id',eventId).maybeSingle();if(e)eventName.textContent=`${e.title} · ${e.venue}`}
+  submit.onclick=async()=>{const text=body.value.trim();if(!text){msg.textContent='コメントを入力してください。';return}const min=ageMin.value?Number(ageMin.value):null,max=ageMax.value?Number(ageMax.value):null;if(min&&max&&min>max){msg.textContent='年齢条件を確認してください。';return}submit.disabled=true;const payload={event_id:eventId,user_id:user.id,type:type.value,preferred_gender:gender.value,preferred_age_min:min,preferred_age_max:max,same_oshi_ok:sameOshi.value==='any'?null:sameOshi.value==='yes',body:text,status:'open'};const {error}=await otakuSupabase.from('otaku_companion_posts').insert(payload);if(error){msg.textContent='投稿できませんでした。';submit.disabled=false;return}location.href=`event.html?id=${encodeURIComponent(eventId)}`};init();
+</script>
+</body>
+</html>
