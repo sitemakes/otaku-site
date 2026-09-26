@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>公演詳細 | OTAKU LIVE</title>
   <style>
-    :root{--bg:#0b0b10;--card:#15151d;--card2:#1c1c26;--text:#f7f7fb;--muted:#9da0ad;--accent:#8b5cf6;--accent2:#ec4899;--line:#2a2a36}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 16px 96px}.back{display:inline-block;color:#c7c8d0;text-decoration:none;margin-bottom:16px}.hero{padding:22px;border-radius:24px;background:radial-gradient(circle at top right,rgba(139,92,246,.28),transparent 40%),linear-gradient(135deg,#1f1733,#171722);border:1px solid #343042}.hero h1{font-size:25px;line-height:1.3;margin:0 0 10px}.meta{color:#b9bbc7;line-height:1.8}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 20px}.btn{border:none;border-radius:16px;padding:14px 12px;font-size:15px;font-weight:800;cursor:pointer}.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}.secondary{background:#242431;color:#eee;border:1px solid #343444}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0}.card h2{font-size:17px;margin:0 0 10px}.lock{color:var(--muted);font-size:14px;line-height:1.7}.stat{display:flex;gap:10px;flex-wrap:wrap}.chip{background:#20202a;border-radius:999px;padding:7px 10px;color:#d9dae2;font-size:13px}.notice{font-size:12px;color:#9294a1;margin-top:10px}.error{padding:20px;background:#2a1519;border:1px solid #5c2c34;border-radius:16px;color:#ffc7cf}
+    :root{--bg:#0b0b10;--card:#15151d;--text:#f7f7fb;--muted:#9da0ad;--accent:#8b5cf6;--accent2:#ec4899;--line:#2a2a36;--ok:#34d399}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 16px 96px}.back{display:inline-block;color:#c7c8d0;text-decoration:none;margin-bottom:16px}.hero{padding:22px;border-radius:24px;background:radial-gradient(circle at top right,rgba(139,92,246,.28),transparent 40%),linear-gradient(135deg,#1f1733,#171722);border:1px solid #343042}.hero h1{font-size:25px;line-height:1.3;margin:0 0 10px}.meta{color:#b9bbc7;line-height:1.8}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 20px}.btn{border:none;border-radius:16px;padding:14px 12px;font-size:15px;font-weight:800;cursor:pointer}.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}.primary.on{background:var(--ok);color:#08130f}.secondary{background:#242431;color:#eee;border:1px solid #343444}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0}.card h2{font-size:17px;margin:0 0 10px}.muted{color:var(--muted);font-size:14px;line-height:1.7}.stat{display:flex;gap:10px;flex-wrap:wrap}.chip{background:#20202a;border-radius:999px;padding:7px 10px;color:#d9dae2;font-size:13px}.notice{font-size:12px;color:#9294a1;margin-top:10px}.error{padding:20px;background:#2a1519;border:1px solid #5c2c34;border-radius:16px;color:#ffc7cf}.post{padding:12px;border-radius:14px;background:#1e1e28;border:1px solid var(--line);margin-top:8px}.post .who{font-weight:800;margin-bottom:5px}
   </style>
 </head>
 <body>
@@ -14,27 +14,32 @@
   <a class="back" href="index.html">← ホームへ戻る</a>
   <div id="root"><div class="card">公演情報を読み込み中...</div></div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
 <script>
-  const SUPABASE_URL='https://pfyvsweuvdnpmvabfflh.supabase.co';
-  const KEY='sb_publishable_FJ9hNx9T4-sNV6Ypv94vJA_cCq5TxUp';
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false;
   function fmt(iso){const d=new Date(iso);return d.toLocaleString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})}
-  async function load(){
-    const id=new URLSearchParams(location.search).get('id');
-    if(!id){document.getElementById('root').innerHTML='<div class="error">公演IDがありません。</div>';return}
-    try{
-      const r=await fetch(`${SUPABASE_URL}/rest/v1/otaku_events?id=eq.${encodeURIComponent(id)}&select=id,title,venue,prefecture,city,starts_at,ends_at`,{headers:{apikey:KEY}});
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const rows=await r.json(); const e=rows[0]; if(!e) throw new Error('not found');
-      document.title=e.title+' | OTAKU LIVE';
-      document.getElementById('root').innerHTML=`
-        <section class="hero"><div class="notice">DEMO公演</div><h1>${esc(e.title)}</h1><div class="meta">${fmt(e.starts_at)}<br>${esc(e.venue)}<br>${esc(e.prefecture||'')} ${esc(e.city||'')}</div></section>
-        <div class="actions"><button class="btn primary" onclick="needLogin()">参戦する</button><button class="btn secondary" onclick="needLogin()">同行者を募集</button></div>
-        <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 0人</span><span class="chip">🤝 同行募集 0件</span></div></section>
-        <section class="card"><h2>同行者募集</h2><div class="lock">現在はログイン機能実装前です。次のステップで、プロフィール作成・参戦登録・同行募集・DMを接続します。</div></section>`;
-    }catch(err){document.getElementById('root').innerHTML='<div class="error">公演情報の取得に失敗しました。</div>'}
+  async function load(){if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return} user=await otakuGetUser(); if(user) profile=await otakuGetProfile(user.id);
+    const [{data:e,error:eErr},{count},{data:posts}] = await Promise.all([
+      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at').eq('id',id).maybeSingle(),
+      otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
+      otakuSupabase.from('otaku_companion_posts').select('id,type,body,created_at,otaku_profiles(display_name,username)').eq('event_id',id).eq('status','open').order('created_at',{ascending:false}).limit(20)
+    ]);
+    if(eErr||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return} eventData=e; document.title=e.title+' | OTAKU LIVE';
+    if(user){const {data:a}=await otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle();isAttending=!!a}
+    render(count||0,posts||[]);
   }
-  function needLogin(){alert('次の実装でログイン・プロフィール作成・参戦登録を有効にします。')}
+  function render(attendeeCount,posts){root.innerHTML=`
+    <section class="hero"><div class="notice">DEMO公演</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
+    <div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
+    <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 同行募集 ${posts.length}件</span></div></section>
+    <section class="card"><h2>同行者募集</h2>${posts.length?posts.map(p=>`<div class="post"><div class="who">${esc(p.otaku_profiles?.display_name||p.otaku_profiles?.username||'ユーザー')}</div><div class="muted">${p.type==='have_companion_ticket'?'同行枠あり':'一緒に行く人を探す'}</div><div>${esc(p.body)}</div></div>`).join(''):'<div class="muted">まだ募集はありません。</div>'}</section>`;
+    attendBtn.onclick=toggleAttendance; companionBtn.onclick=()=>{if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}location.href=`companion.html?event=${encodeURIComponent(id)}`};
+  }
+  async function toggleAttendance(){if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}attendBtn.disabled=true;
+    if(isAttending){await otakuSupabase.from('otaku_event_attendees').delete().eq('event_id',id).eq('user_id',user.id)}else{const {error}=await otakuSupabase.from('otaku_event_attendees').insert({event_id:id,user_id:user.id});if(error){alert('参戦登録に失敗しました。');attendBtn.disabled=false;return}}
+    isAttending=!isAttending; load();
+  }
   load();
 </script>
 </body>
