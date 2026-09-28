@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>情報の管理 | OTAKU LIVE</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#0b0b10;color:#f7f7fb}*{box-sizing:border-box}body{margin:0}main{max-width:960px;margin:auto;padding:24px 16px 60px}a{color:#d8c6ff}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:26px}h2{font-size:19px}.card{background:#15151d;border:1px solid #343042;border-radius:20px;padding:20px;margin:18px 0}.note{color:#b9bbc7;line-height:1.7;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-size:14px;margin:14px 0 6px}input,select,button{font:inherit;padding:12px;border:1px solid #45404f;border-radius:10px;background:#101018;color:inherit;width:100%}button{cursor:pointer;background:#322346;font-weight:700}button:disabled{opacity:.5;cursor:wait}.primary{background:linear-gradient(135deg,#7040c5,#b02d77)}.check{display:flex;gap:10px;align-items:center}.check input{width:auto}.actions{display:flex;gap:10px;margin-top:18px}.actions button{width:auto}.record{display:flex;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid #343042;padding:14px 0}.record button{width:auto;flex-shrink:0}.record small{display:block;color:#b9bbc7;margin-top:6px}.record-title{overflow-wrap:anywhere}.status{white-space:pre-wrap;line-height:1.6;color:#f0d3ef}.badge{font-size:12px;color:#e5b8ff}fieldset{border:0;padding:0;margin:0;min-width:0}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #c9a4ff;outline-offset:3px}[hidden]{display:none!important}@media(max-width:600px){.grid{grid-template-columns:1fr}.record{align-items:flex-start}.actions{flex-wrap:wrap}}
+</style></head><body><main>
+<header><strong>OTAKU LIVE</strong><a href="profile.html">マイページへ</a></header>
+<h1>グループ・メンバー・公演の管理</h1>
+<p class="note">公式サイトや主催者の発表を確認し、出典を添えて登録します。下書きは一般公開されません。日時はすべて日本時間です。</p>
+<p id="gate" role="status">管理者権限を確認しています…</p>
+<div id="workspace" hidden>
+<section class="card"><div class="grid"><div><label for="kind">登録する情報</label><select id="kind"><option value="groups">グループ</option><option value="idols">メンバー</option><option value="events">公演・イベント</option></select></div><div><label for="scope">データの区分</label><select id="scope"><option value="real">実在データ</option><option value="demo">DEMOデータ</option></select></div></div></section>
+<section class="card"><h2 id="editorTitle">新規登録</h2>
+<form id="editor"><fieldset id="fields">
+<div id="nameField"><label for="name">名称（必須）</label><input id="name" maxlength="100"></div>
+<div id="slugField"><label for="slug">識別名（必須・例: group-name）</label><input id="slug" maxlength="80" pattern="[a-z0-9-]{2,80}"></div>
+<div id="groupField" hidden><label for="group_id">所属・出演グループ（必須）</label><select id="group_id"></select><p class="note">複数組の合同公演は代表グループを選び、公演名に合同公演と記載してください。</p></div>
+<div id="eventFields" hidden><label for="title">公演名（必須）</label><input id="title" maxlength="200"><label for="venue">会場（必須）</label><input id="venue" maxlength="200"><div class="grid"><div><label for="prefecture">都道府県</label><input id="prefecture" maxlength="100"></div><div><label for="city">市区町村</label><input id="city" maxlength="100"></div><div><label for="starts_at">開演（必須・日本時間）</label><input id="starts_at" type="datetime-local"></div><div><label for="ends_at">終演（日本時間・未定なら空欄）</label><input id="ends_at" type="datetime-local"></div></div></div>
+<label for="source_url">出典URL（公開時は必須）</label><input id="source_url" type="url" maxlength="2048" placeholder="https://公式サイト/発表ページ"><p class="note">該当情報が確認できるページを登録してください。画像や紹介文の転載は行いません。</p><a id="sourcePreview" target="_blank" rel="noopener noreferrer" hidden>入力した出典を開く ↗</a>
+<label for="source_kind">出典の種類</label><select id="source_kind"><option value="">選択してください</option><option value="official">公式サイト</option><option value="organizer">主催者</option><option value="venue">会場</option><option value="ticketing">公式販売ページ</option></select>
+<p id="lastChecked" class="note"></p><label class="check"><input id="verified" type="checkbox">今回の入力内容を出典と照合した</label>
+<label for="publication_status">保存後の状態</label><select id="publication_status"><option value="draft">下書き（非公開）</option><option value="published">公開</option><option value="archived">非公開・保管</option></select>
+<p class="note">公開中の情報を編集する場合も再確認が必要です。削除はせず「非公開・保管」で履歴を残します。</p>
+<div class="actions"><button id="save" class="primary" type="submit">保存する</button><button id="resetEditor" type="button">新規入力に戻る</button></div>
+</fieldset></form><p id="message" class="status" role="status" aria-live="polite"></p></section>
+<section class="card"><h2>登録済みの情報</h2><label for="search">名称で絞り込み</label><input id="search" type="search"><div id="records"></div><button id="more" type="button" hidden>さらに読み込む</button></section>
+<section class="card"><details id="auditDetails"><summary>最近の変更履歴</summary><div id="audit"></div></details></section>
+</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase.js"></script><script src="catalog.js"></script><script src="admin.js"></script></body></html>

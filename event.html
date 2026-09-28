@@ -14,11 +14,11 @@
   <a class="back" href="index.html">← ホームへ戻る</a>
   <div id="root"><div class="card">公演情報を読み込み中...</div></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="catalog.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false,favoriteMap={};
-  function fmt(iso){const d=new Date(iso);return d.toLocaleString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'})}
+  function fmt(iso){const d=new Date(iso);return d.toLocaleString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})}
   function sameOshiMeta(policy){
     if(policy==='ok') return {label:'同担 ◎',cls:'same-ok'};
     if(policy==='ng') return {label:'同担 NG',cls:'same-ng'};
@@ -28,7 +28,7 @@
     if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return}
     user=await otakuGetUser(); if(user) profile=await otakuGetProfile(user.id);
     const [eventRes,countRes,postRes] = await Promise.all([
-      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at').eq('id',id).maybeSingle(),
+      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
       otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,created_at,otaku_profiles(display_name,username,same_oshi_policy)').eq('event_id',id).eq('status','open').order('created_at',{ascending:false}).limit(20)
     ]);
@@ -46,10 +46,13 @@
     if(user){const {data:a}=await otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle();isAttending=!!a}
     render(countRes.count||0,posts);
   }
+  function sourceHtml(e){
+    try {const url=OtakuCatalog.sourceUrl(e.source_url);if(!url)return '';return '<section class="card"><a style="color:#dcc5ff" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">出典・最新の公演情報を確認 ↗</a><p class="notice">確認日: '+(e.source_checked_at?esc(fmt(e.source_checked_at)):'未確認')+' · 開催変更は出典をご確認ください。</p></section>'}catch{return ''}
+  }
   function render(attendeeCount,posts){
     root.innerHTML=`
-      <section class="hero"><div class="notice">DEMO公演</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
-      <div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
+      <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
+      ${sourceHtml(eventData)}<div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 同行募集 ${posts.length}件</span></div></section>
       <section class="card"><h2>同行者募集</h2>${posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;

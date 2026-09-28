@@ -26,8 +26,8 @@
 
   <section class="card">
     <h2 style="font-size:17px;margin-top:0">推し</h2>
-    <div class="muted section-note">メイン推しは同行募集カードに最優先で表示されます。現在のアイドル情報はDEMOデータです。</div>
-    <div class="oshi-add">
+    <div class="muted section-note">メイン推しは同行募集カードに最優先で表示されます。公開済みの実在メンバーを選択できます。</div>
+    <label class="muted"><input id="showDemo" type="checkbox"> DEMOメンバーを選択する</label><div class="oshi-add">
       <div class="field" style="margin:0"><label>グループ</label><select id="groupSelect"></select></div>
       <div class="field" style="margin:0"><label>メンバー</label><select id="idolSelect"></select></div>
       <button id="addFavorite" class="btn primary">追加</button>
@@ -37,25 +37,26 @@
   </section>
 
   <section class="card"><h2 style="font-size:17px;margin-top:0">参戦予定</h2><div id="events" class="events"><div class="muted">読み込み中...</div></div></section>
-  <button id="logout" class="btn secondary">ログアウト</button>
+  <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
 <script>
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   let user=null, profile=null, idols=[], groups=[];
   async function requireUser(){user=await otakuGetUser(); if(!user){location.href=otakuLoginUrl(location.href);return false} return true}
   function fill(p){if(!p)return; username.value=p.username||'';displayName.value=p.display_name||'';ageRange.value=p.age_range||'unspecified';gender.value=p.gender||'unspecified';prefecture.value=p.prefecture||'';sameOshi.value=p.same_oshi_policy||'depends';bio.value=p.bio||''}
-  async function loadEvents(){const {data,error}=await otakuSupabase.from('otaku_event_attendees').select('event_id,otaku_events(id,title,venue,starts_at)').eq('user_id',user.id).order('created_at',{ascending:false});const el=document.getElementById('events');if(error||!data?.length){el.innerHTML='<div class="muted">まだ参戦予定はありません。</div>';return}el.innerHTML=data.map(x=>`<div class="event"><a href="event.html?id=${x.otaku_events.id}">${x.otaku_events.title}</a><div class="muted">${new Date(x.otaku_events.starts_at).toLocaleString('ja-JP')} · ${x.otaku_events.venue}</div></div>`).join('')}
+  async function loadEvents(){const {data,error}=await otakuSupabase.from('otaku_event_attendees').select('event_id,otaku_events(id,title,venue,starts_at)').eq('user_id',user.id).order('created_at',{ascending:false});const el=document.getElementById('events');if(error||!data?.length){el.innerHTML='<div class="muted">まだ参戦予定はありません。</div>';return}el.innerHTML=data.filter(x=>x.otaku_events).map(x=>`<div class="event"><a href="event.html?id=${x.otaku_events.id}">${esc(x.otaku_events.title)}</a><div class="muted">${new Date(x.otaku_events.starts_at).toLocaleString('ja-JP')} · ${esc(x.otaku_events.venue)}</div></div>`).join('')}
 
   async function loadIdols(){
-    const {data,error}=await otakuSupabase.from('otaku_idols').select('id,name,group_id,otaku_idol_groups(id,name)').order('name',{ascending:true});
+    const {data,error}=await otakuSupabase.from('otaku_idols').select('id,name,group_id,otaku_idol_groups(id,name)').eq('publication_status','published').eq('is_demo',document.getElementById('showDemo').checked).order('name',{ascending:true});
     if(error){favMsg.textContent='アイドル情報を取得できませんでした。';return}
     idols=data||[];
     const map=new Map(); idols.forEach(i=>{if(i.otaku_idol_groups) map.set(i.otaku_idol_groups.id,i.otaku_idol_groups.name)});
     groups=[...map.entries()].map(([id,name])=>({id,name})).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
-    groupSelect.innerHTML=groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+    groupSelect.innerHTML='<option value="">グループを選択</option>'+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
     groupSelect.onchange=renderIdolOptions; renderIdolOptions();
   }
-  function renderIdolOptions(){const groupId=groupSelect.value;const list=idols.filter(i=>i.group_id===groupId);idolSelect.innerHTML=list.map(i=>`<option value="${i.id}">${i.name}</option>`).join('')}
+  function renderIdolOptions(){const groupId=groupSelect.value;const list=idols.filter(i=>i.group_id===groupId);idolSelect.innerHTML=list.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('')}
 
   async function loadFavorites(){
     const {data,error}=await otakuSupabase.from('otaku_user_favorites').select('idol_id,is_primary,created_at,otaku_idols(id,name,otaku_idol_groups(name))').eq('user_id',user.id).order('is_primary',{ascending:false}).order('created_at',{ascending:true});
@@ -63,7 +64,7 @@
     if(error){el.innerHTML='<div class="muted">推し情報を取得できませんでした。</div>';return}
     const rows=data||[];
     if(!rows.length){el.innerHTML='<div class="muted">まだ推しが登録されていません。</div>';return}
-    el.innerHTML=rows.map(r=>`<div class="favorite"><div><div class="fav-main"><span class="heart">♥</span>${r.otaku_idols?.name||'メンバー'}</div><div class="fav-sub">${r.otaku_idols?.otaku_idol_groups?.name||''}${r.is_primary?' · メイン推し':''}</div></div><div class="fav-actions">${r.is_primary?'<span class="mini main">メイン</span>':`<button class="mini" onclick="setPrimary('${r.idol_id}')">メインにする</button>`}<button class="mini danger" onclick="removeFavorite('${r.idol_id}',${r.is_primary?'true':'false'})">削除</button></div></div>`).join('');
+    el.innerHTML=rows.map(r=>`<div class="favorite"><div><div class="fav-main"><span class="heart">♥</span>${esc(r.otaku_idols?.name||'非公開のメンバー')}</div><div class="fav-sub">${esc(r.otaku_idols?.otaku_idol_groups?.name||'')}${r.is_primary?' · メイン推し':''}</div></div><div class="fav-actions">${r.is_primary?'<span class="mini main">メイン</span>':`<button class="mini" onclick="setPrimary('${r.idol_id}')">メインにする</button>`}<button class="mini danger" onclick="removeFavorite('${r.idol_id}',${r.is_primary?'true':'false'})">削除</button></div></div>`).join('');
   }
 
   async function setPrimary(idolId){
@@ -99,7 +100,8 @@
 
   save.onclick=async()=>{const payload={id:user.id,username:username.value.trim(),display_name:displayName.value.trim(),age_range:ageRange.value,gender:gender.value,prefecture:prefecture.value.trim()||null,same_oshi_policy:sameOshi.value,bio:bio.value.trim()||null};if(!payload.username||!payload.display_name){msg.textContent='ユーザーIDと表示名は必須です。';return}const {error}=await otakuSupabase.from('otaku_profiles').upsert(payload,{onConflict:'id'});msg.textContent=error?'保存できませんでした。ユーザーIDが重複していないか確認してください。':'保存しました。';if(!error){profile=payload;const next=otakuNextUrl('profile.html');if(next!=='profile.html') setTimeout(()=>location.href=next,400)}};
   logout.onclick=async()=>{await otakuSupabase.auth.signOut();location.href='index.html'};
-  (async()=>{if(!await requireUser())return;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites()])})();
+  document.getElementById('showDemo').onchange=loadIdols;
+  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites()])})();
 </script>
 </body>
 </html>
