@@ -52,7 +52,7 @@
   function render(attendeeCount,posts){
     root.innerHTML=`
       <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
-      ${sourceHtml(eventData)}<div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
+      ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 同行募集 ${posts.length}件</span></div></section>
       <section class="card"><h2>同行者募集</h2>${posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
