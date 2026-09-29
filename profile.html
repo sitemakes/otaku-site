@@ -24,6 +24,8 @@
     <button id="save" class="btn primary">プロフィールを保存</button><div id="msg" class="msg"></div>
   </section>
 
+  <section class="card"><h2 style="font-size:17px;margin-top:0">通知設定</h2><div class="muted section-note">最初のプロフィール作成時はすべて許可されています。ここでいつでも変更できます。</div><label class="check"><input id="notifyInApp" type="checkbox"> サイト内通知を受け取る</label><label class="check"><input id="notifyDm" type="checkbox"> DM通知を受け取る</label><label class="check"><input id="notifyBoard" type="checkbox"> 掲示板通知を受け取る</label><label class="check"><input id="notifyEvent" type="checkbox"> 参戦予定の公演リマインダーを受け取る</label><button id="saveNotifications" class="btn secondary">通知設定を保存</button><div id="notifyMsg" class="msg"></div></section>
+
   <section class="card">
     <h2 style="font-size:17px;margin-top:0">推し</h2>
     <div class="muted section-note">メイン推しは同行募集カードに最優先で表示されます。公開済みの実在メンバーを選択できます。</div>
@@ -37,7 +39,7 @@
   </section>
 
   <section class="card"><h2 style="font-size:17px;margin-top:0">参戦予定</h2><div id="events" class="events"><div class="muted">読み込み中...</div></div></section>
-  <p><a href="safety.html">安全設定・自分の募集を管理</a></p>
+  <p><a href="notifications.html">通知を見る</a></p><p><a href="safety.html">安全設定・自分の募集を管理</a></p>
   <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><p><a id="reportAdminLink" href="reports.html" hidden>通報を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
@@ -67,6 +69,8 @@
     if(!rows.length){el.innerHTML='<div class="muted">まだ推しが登録されていません。</div>';return}
     el.innerHTML=rows.map(r=>`<div class="favorite"><div><div class="fav-main"><span class="heart">♥</span>${esc(r.otaku_idols?.name||'非公開のメンバー')}</div><div class="fav-sub">${esc(r.otaku_idols?.otaku_idol_groups?.name||'')}${r.is_primary?' · メイン推し':''}</div></div><div class="fav-actions"><a class="mini" href="board.html?idol=${encodeURIComponent(r.idol_id)}">掲示板</a>${r.is_primary?'<span class="mini main">メイン</span>':`<button class="mini" onclick="setPrimary('${r.idol_id}')">メインにする</button>`}<button class="mini danger" onclick="removeFavorite('${r.idol_id}',${r.is_primary?'true':'false'})">削除</button></div></div>`).join('');
   }
+  async function loadNotificationPreferences(){const {data,error}=await otakuSupabase.from('otaku_notification_preferences').select('in_app_enabled,dm_enabled,board_enabled,event_reminder_enabled').eq('user_id',user.id).maybeSingle();if(error||!data)return;notifyInApp.checked=data.in_app_enabled;notifyDm.checked=data.dm_enabled;notifyBoard.checked=data.board_enabled;notifyEvent.checked=data.event_reminder_enabled}
+  saveNotifications.onclick=async()=>{const payload={user_id:user.id,in_app_enabled:notifyInApp.checked,dm_enabled:notifyDm.checked,board_enabled:notifyBoard.checked,event_reminder_enabled:notifyEvent.checked,updated_at:new Date().toISOString()};const {error}=await otakuSupabase.from('otaku_notification_preferences').upsert(payload,{onConflict:'user_id'});notifyMsg.textContent=error?'通知設定を保存できませんでした。':'通知設定を保存しました。'};
 
   async function setPrimary(idolId){
     favMsg.textContent='';
@@ -102,7 +106,7 @@
   save.onclick=async()=>{const payload={id:user.id,username:username.value.trim(),display_name:displayName.value.trim(),age_range:ageRange.value,gender:gender.value,prefecture:prefecture.value.trim()||null,same_oshi_policy:sameOshi.value,bio:bio.value.trim()||null};if(!payload.username||!payload.display_name){msg.textContent='ユーザーIDと表示名は必須です。';return}const {error}=await otakuSupabase.from('otaku_profiles').upsert(payload,{onConflict:'id'});msg.textContent=error?'保存できませんでした。ユーザーIDが重複していないか確認してください。':'保存しました。';if(!error){profile=payload;const next=otakuNextUrl('profile.html');if(next!=='profile.html') setTimeout(()=>location.href=next,400)}};
   logout.onclick=async()=>{await otakuSupabase.auth.signOut();location.href='index.html'};
   document.getElementById('showDemo').onchange=loadIdols;
-  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites()])})();
+  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites(),loadNotificationPreferences()])})();
 </script>
 </body>
 </html>
