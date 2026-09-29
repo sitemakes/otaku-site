@@ -25,7 +25,7 @@
     <button id="submit" class="btn">募集を投稿</button><div id="msg" class="msg"></div>
   </section>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="companion-prefs.js"></script>
 <script>
   const eventId=new URLSearchParams(location.search).get('event'); let user=null;
   async function init(){if(!eventId){location.href='index.html';return}back.href=`event.html?id=${encodeURIComponent(eventId)}`;user=await otakuGetUser();if(!user){location.href=otakuLoginUrl(location.href);return}const p=await otakuGetProfile(user.id);if(!p){location.href=otakuProfileUrl(location.href);return}const {data:e}=await otakuSupabase.from('otaku_events').select('title,venue,starts_at').eq('id',eventId).maybeSingle();if(e)eventName.textContent=`${e.title} · ${e.venue}`}
