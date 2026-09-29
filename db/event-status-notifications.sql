@@ -6,11 +6,11 @@ begin
  if auth.uid() is null or not public.otaku_is_catalog_admin() then raise exception 'catalog_admin_required' using errcode='42501'; end if;
  if TG_OP='INSERT' and new.publication_status='published' then
   insert into public.otaku_notifications(user_id,kind,title,body,href)
-  select f.user_id,'event','お気に入りグループの新しい公演',new.title||'が公開されました。','event.html?id='||new.id from public.otaku_group_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.group_id=new.group_id and p.in_app_enabled and p.event_reminder_enabled; return new;
+  select f.user_id,'event','お気に入りグループの新しい公演',new.title||'が公開されました。','event.html?id='||new.id from public.otaku_group_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.group_id=new.group_id and f.notify and p.in_app_enabled and p.event_reminder_enabled; return new;
  end if;
  if TG_OP='UPDATE' and new.publication_status='published' and old.publication_status<>'published' then
   insert into public.otaku_notifications(user_id,kind,title,body,href)
-  select f.user_id,'event','お気に入りグループの新しい公演',new.title||'が公開されました。','event.html?id='||new.id from public.otaku_group_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.group_id=new.group_id and p.in_app_enabled and p.event_reminder_enabled;
+  select f.user_id,'event','お気に入りグループの新しい公演',new.title||'が公開されました。','event.html?id='||new.id from public.otaku_group_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.group_id=new.group_id and f.notify and p.in_app_enabled and p.event_reminder_enabled;
  end if;
  if TG_OP='UPDATE' and (new.event_status is distinct from old.event_status or new.status_note is distinct from old.status_note) then
   title_text:=case new.event_status when 'cancelled' then '公演中止のお知らせ' when 'postponed' then '公演延期のお知らせ' when 'changed' then '公演情報変更のお知らせ' else '公演情報更新のお知らせ' end;
@@ -18,7 +18,7 @@ begin
   insert into public.otaku_notifications(user_id,kind,title,body,href)
   select a.user_id,'event',title_text,body_text,'event.html?id='||new.id from public.otaku_event_attendees a join public.otaku_notification_preferences p on p.user_id=a.user_id where a.event_id=new.id and p.in_app_enabled and p.event_reminder_enabled;
   insert into public.otaku_notifications(user_id,kind,title,body,href)
-  select f.user_id,'event',title_text,body_text,'event.html?id='||new.id from public.otaku_event_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.event_id=new.id and p.in_app_enabled and p.event_reminder_enabled;
+  select f.user_id,'event',title_text,body_text,'event.html?id='||new.id from public.otaku_event_favorites f join public.otaku_notification_preferences p on p.user_id=f.user_id where f.event_id=new.id and f.notify and p.in_app_enabled and p.event_reminder_enabled;
  end if;
  return new;
 end $$;
