@@ -17,6 +17,7 @@
       <div class="field"><label>メールアドレス</label><input id="email" type="email" autocomplete="email" /></div>
       <div class="field"><label>パスワード</label><input id="password" type="password" autocomplete="current-password" /></div>
       <button id="submit" class="btn">ログイン</button>
+      <button id="forgot" type="button" style="display:block;width:100%;margin-top:14px;border:0;background:transparent;color:#cfc0ef;cursor:pointer">パスワードを忘れた場合</button>
       <div id="msg" class="msg"></div>
       <div class="sub">新規登録では確認メールが届く場合があります。確認後、このページからログインしてください。</div>
     </section>
@@ -32,6 +33,7 @@
     const msg=document.getElementById('msg');
     function setMode(next){mode=next;loginTab.classList.toggle('active',mode==='login');signupTab.classList.toggle('active',mode==='signup');submit.textContent=mode==='login'?'ログイン':'新規登録';}
     loginTab.onclick=()=>setMode('login'); signupTab.onclick=()=>setMode('signup');
+    forgot.onclick=async()=>{const email=document.getElementById('email').value.trim();if(!email){show('先にメールアドレスを入力してください。');return}forgot.disabled=true;const {error}=await otakuSupabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/reset-password.html'});show(error?'再設定メールを送信できませんでした。メールアドレスを確認してください。':'再設定メールを送信しました。メール内のリンクを開いて新しいパスワードを設定してください。');forgot.disabled=false};
     function show(text){msg.style.display='block';msg.textContent=text}
     submit.onclick=async()=>{
       const email=document.getElementById('email').value.trim();
