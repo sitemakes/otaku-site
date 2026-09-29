@@ -37,7 +37,8 @@
   </section>
 
   <section class="card"><h2 style="font-size:17px;margin-top:0">参戦予定</h2><div id="events" class="events"><div class="muted">読み込み中...</div></div></section>
-  <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
+  <p><a href="safety.html">安全設定・自分の募集を管理</a></p>
+  <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><p><a id="reportAdminLink" href="reports.html" hidden>通報を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
 <script>
@@ -101,7 +102,7 @@
   save.onclick=async()=>{const payload={id:user.id,username:username.value.trim(),display_name:displayName.value.trim(),age_range:ageRange.value,gender:gender.value,prefecture:prefecture.value.trim()||null,same_oshi_policy:sameOshi.value,bio:bio.value.trim()||null};if(!payload.username||!payload.display_name){msg.textContent='ユーザーIDと表示名は必須です。';return}const {error}=await otakuSupabase.from('otaku_profiles').upsert(payload,{onConflict:'id'});msg.textContent=error?'保存できませんでした。ユーザーIDが重複していないか確認してください。':'保存しました。';if(!error){profile=payload;const next=otakuNextUrl('profile.html');if(next!=='profile.html') setTimeout(()=>location.href=next,400)}};
   logout.onclick=async()=>{await otakuSupabase.auth.signOut();location.href='index.html'};
   document.getElementById('showDemo').onchange=loadIdols;
-  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites()])})();
+  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites()])})();
 </script>
 </body>
 </html>

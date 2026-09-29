@@ -1,0 +1,42 @@
+'use strict';
+const id=new URLSearchParams(location.search).get('id');let user=null,conversation=null,otherId=null,lastSignature=null,poll=null,loading=false,sending=false;
+const $=id=>document.getElementById(id),esc=OtakuSafety.esc;
+function unavailable(){conversation=null;clearInterval(poll);$('messages').replaceChildren();$('chatNotice').textContent='このDMは利用できなくなりました。ブロックなどにより非表示になる場合があります。';$('safetyActions').querySelectorAll('button').forEach(b=>b.hidden=true);document.querySelector('.composer').hidden=true}
+async function init(){
+  if(!id){location.href='dm.html';return}user=await otakuGetUser();if(!user){location.href=otakuLoginUrl(location.href);return}
+  const {data:c,error}=await otakuSupabase.from('otaku_conversations').select('id,event_id,owner_user_id,requester_user_id').eq('id',id).maybeSingle();
+  if(error){$('chatNotice').textContent='DMを取得できませんでした。ページを再読み込みしてください。';$('send').disabled=true;return}if(!c){unavailable();return}
+  conversation=c;otherId=c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id;
+  const [{data:p},{data:e}]=await Promise.all([otakuSupabase.from('otaku_profiles').select('display_name,username').eq('id',otherId).maybeSingle(),otakuSupabase.from('otaku_events').select('title').eq('id',c.event_id).maybeSingle()]);
+  $('title').textContent=p?.display_name||p?.username||'ユーザー';$('event').textContent=e?.title||'';document.title=$('title').textContent+' | OTAKU LIVE';
+  $('reportUser').hidden=false;$('blockUser').hidden=false;
+  $('reportUser').onclick=()=>OtakuSafety.report(otherId,{conversationId:id});
+  $('blockUser').onclick=()=>OtakuSafety.block(otherId,()=>{unavailable();location.href='safety.html'});
+  await loadMessages(true);if(conversation)poll=setInterval(()=>loadMessages(false),3000);
+}
+async function loadMessages(forceScroll=false){
+  if(loading||!conversation)return;loading=true;
+  try{
+    const {data:c,error:ce}=await otakuSupabase.from('otaku_conversations').select('id').eq('id',id).maybeSingle();
+    if(ce){$('chatNotice').textContent='更新を取得できません。接続を確認してください。';return}if(!c){unavailable();return}
+    const {data,error}=await otakuSupabase.from('otaku_messages').select('id,sender_id,content,created_at').eq('conversation_id',id).order('created_at',{ascending:true});
+    if(error){$('chatNotice').textContent='メッセージを取得できませんでした。';return}
+    $('chatNotice').textContent='';const rows=data||[],signature=rows.map(x=>x.id).join(',');if(signature===lastSignature)return;lastSignature=signature;
+    $('messages').innerHTML=rows.length?rows.map(m=>`<div class="bubble ${m.sender_id===user.id?'mine':'theirs'}"><div>${esc(m.content).replace(/\n/g,'<br>')}</div><div class="time">${new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})}</div>${m.sender_id!==user.id?`<button class="safety-btn" data-message-report="${m.id}">このメッセージを通報</button>`:''}</div>`).join(''):'<div class="empty">最初のメッセージを送ってみましょう。</div>';
+    $('messages').querySelectorAll('[data-message-report]').forEach(b=>b.onclick=()=>OtakuSafety.report(otherId,{conversationId:id,messageId:b.dataset.messageReport}));
+    if(forceScroll||rows.length)window.scrollTo({top:document.body.scrollHeight,behavior:forceScroll?'auto':'smooth'});
+  }finally{loading=false}
+}
+async function sendMessage(){
+  const content=$('input').value.trim();if(!content||!conversation||sending)return;sending=true;$('send').disabled=true;
+  try{
+    const {error}=await otakuSupabase.from('otaku_messages').insert({conversation_id:id,sender_id:user.id,content});
+    if(error){$('chatNotice').textContent=OtakuSafety.errorText(error);if(error.code==='42501')await loadMessages();return}
+    $('input').value='';await loadMessages(true);
+  }finally{sending=false;$('send').disabled=false}
+}
+$('send').onclick=sendMessage;
+$('input').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendMessage()}});
+window.addEventListener('focus',()=>loadMessages());window.addEventListener('pagehide',()=>clearInterval(poll));
+window.addEventListener('pageshow',event=>{if(event.persisted&&conversation){loadMessages();clearInterval(poll);poll=setInterval(()=>loadMessages(),3000)}});
+init();

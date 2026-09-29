@@ -14,7 +14,7 @@
   <a class="back" href="index.html">← ホームへ戻る</a>
   <div id="root"><div class="card">公演情報を読み込み中...</div></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="catalog.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="catalog.js"></script><script src="safety.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false,favoriteMap={};
@@ -30,7 +30,7 @@
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
-      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,created_at,otaku_profiles(display_name,username,same_oshi_policy)').eq('event_id',id).eq('status','open').order('created_at',{ascending:false}).limit(20)
+      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,created_at,otaku_profiles(display_name,username,same_oshi_policy)').eq('event_id',id).eq('status','open').order('created_at',{ascending:false}).limit(20)
     ]);
     const e=eventRes.data,posts=postRes.data||[];
     if(eventRes.error||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return}
@@ -60,11 +60,14 @@
         const idol=fav?.otaku_idols;
         const same=sameOshiMeta(p.otaku_profiles?.same_oshi_policy);
         const oshiHtml=idol?`<span class="smallchip oshi">♥ ${esc(idol.otaku_idol_groups?.name||'')} / ${esc(idol.name||'')}</span>`:'';
-        return `<div class="post"><div class="who">${esc(p.otaku_profiles?.display_name||p.otaku_profiles?.username||'ユーザー')}</div><div class="postmeta">${oshiHtml}<span class="smallchip ${same.cls}">${same.label}</span><span class="smallchip">${p.type==='have_companion_ticket'?'同行枠あり':'一緒に行く人を探す'}</span></div><div class="postbody">${esc(p.body)}</div><div class="postactions"><button class="msgbtn" data-post="${p.id}" data-owner="${p.user_id}" ${own?'disabled':''}>${own?'自分の募集':'メッセージを送る'}</button></div></div>`
+        return `<div class="post"><div class="who">${esc(p.otaku_profiles?.display_name||p.otaku_profiles?.username||'ユーザー')}</div><div class="postmeta">${oshiHtml}<span class="smallchip ${same.cls}">${same.label}</span><span class="smallchip">${p.type==='have_companion_ticket'?'同行枠あり':'一緒に行く人を探す'}</span></div><div class="postbody">${esc(p.body)}</div><div class="postactions"><button class="msgbtn" data-post="${p.id}" data-owner="${p.user_id}" ${own?'disabled':''}>${own?'自分の募集':'メッセージを送る'}</button><div class="safety-links">${own?`<button class="safety-btn" data-close="${p.id}">募集を終了</button>`:`<button class="safety-btn" data-report="${p.user_id}" data-context="${p.id}">通報</button><button class="safety-btn" data-block="${p.user_id}">ブロック</button>`}</div></div></div>`
       }).join(''):'<div class="muted">まだ募集はありません。</div>'}</section>`;
     attendBtn.onclick=toggleAttendance;
     companionBtn.onclick=()=>{if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}location.href=`companion.html?event=${encodeURIComponent(id)}`};
     document.querySelectorAll('.msgbtn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>openConversation(btn.dataset.post,btn.dataset.owner,btn)));
+    document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
+    document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
+    document.querySelectorAll('[data-block]').forEach(btn=>btn.onclick=()=>OtakuSafety.block(btn.dataset.block,load));
   }
   async function toggleAttendance(){
     if(!user){location.href=otakuLoginUrl(location.href);return} if(!profile){location.href=otakuProfileUrl(location.href);return} attendBtn.disabled=true;

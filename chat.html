@@ -12,43 +12,10 @@
 <body>
 <div class="wrap">
   <header class="head"><div class="headrow"><a class="back" href="dm.html">‹</a><div><div id="title" class="title">DM</div><div id="event" class="event"></div></div><span></span></div></header>
+  <div id="safetyActions" style="padding:0 16px"><div class="safety-links"><button id="reportUser" class="safety-btn" hidden>相手を通報</button><button id="blockUser" class="safety-btn" hidden>相手をブロック</button></div><p id="chatNotice" style="font-size:13px;color:#bbb" role="status"></p></div>
   <main id="messages" class="messages"><div class="empty">メッセージを読み込み中...</div></main>
 </div>
 <div class="composer"><div class="inner"><textarea id="input" maxlength="2000" placeholder="メッセージを入力"></textarea><button id="send" class="send">送信</button></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script>
-<script>
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const id=new URLSearchParams(location.search).get('id'); let user=null,conversation=null,lastSignature='';
-function fmtTime(iso){return new Date(iso).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}
-async function init(){
-  if(!id){location.href='dm.html';return}
-  user=await otakuGetUser(); if(!user){location.href=otakuLoginUrl(location.href);return}
-  const {data:c,error}=await otakuSupabase.from('otaku_conversations').select('id,event_id,owner_user_id,requester_user_id').eq('id',id).maybeSingle();
-  if(error||!c){document.querySelector('.wrap').innerHTML='<div class="error">このDMを開けません。</div>';document.querySelector('.composer').style.display='none';return}
-  conversation=c;
-  const otherId=c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id;
-  const [{data:p},{data:e}]=await Promise.all([
-    otakuSupabase.from('otaku_profiles').select('display_name,username').eq('id',otherId).maybeSingle(),
-    otakuSupabase.from('otaku_events').select('title').eq('id',c.event_id).maybeSingle()
-  ]);
-  title.textContent=p?.display_name||p?.username||'ユーザー'; event.textContent=e?.title||''; document.title=(title.textContent||'DM')+' | OTAKU LIVE';
-  await loadMessages(true); setInterval(()=>loadMessages(false),3000);
-}
-async function loadMessages(forceScroll){
-  const {data,error}=await otakuSupabase.from('otaku_messages').select('id,sender_id,content,created_at').eq('conversation_id',id).order('created_at',{ascending:true});
-  if(error)return;
-  const rows=data||[]; const signature=rows.map(x=>x.id).join(','); if(signature===lastSignature)return; lastSignature=signature;
-  messages.innerHTML=rows.length?rows.map(m=>`<div class="bubble ${m.sender_id===user.id?'mine':'theirs'}"><div>${esc(m.content).replace(/\n/g,'<br>')}</div><div class="time">${fmtTime(m.created_at)}</div></div>`).join(''):'<div class="empty">最初のメッセージを送ってみましょう。</div>';
-  if(forceScroll||rows.length)window.scrollTo({top:document.body.scrollHeight,behavior:forceScroll?'auto':'smooth'});
-}
-async function sendMessage(){
-  const content=input.value.trim(); if(!content||!conversation)return; send.disabled=true;
-  const {error}=await otakuSupabase.from('otaku_messages').insert({conversation_id:id,sender_id:user.id,content});
-  send.disabled=false; if(error){alert('送信できませんでした。');return} input.value=''; await loadMessages(true);
-}
-send.onclick=sendMessage;
-input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
-init();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase.js"></script><script src="safety.js"></script><script src="chat.js"></script>
 </body>
 </html>
