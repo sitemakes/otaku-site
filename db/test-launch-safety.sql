@@ -1,0 +1,35 @@
+begin;
+select set_config('request.jwt.claim.sub','5d2de9e8-09c4-432e-98f0-63b3fd6fd806',true);
+select set_config('test.student',md5((select jsonb_agg(p order by id)::text from public.profiles p)),true);
+select set_config('test.auth_count',(select count(*)::text from auth.users),true);
+select set_config('test.event',(select id::text from public.otaku_events where publication_status='published' limit 1),true);
+set local role authenticated;
+insert into public.otaku_board_posts(user_id,event_id,body) values(auth.uid(),current_setting('test.event')::uuid,'launch-safety test') returning id;
+select set_config('test.board',(select id::text from public.otaku_board_posts where user_id=auth.uid() and body='launch-safety test' order by created_at desc limit 1),true);
+select set_config('request.jwt.claim.sub','30769412-a9b6-40bd-b65c-286f8917f39a',true);
+insert into public.otaku_content_reports(reporter_id,kind,target_id,reason) values(auth.uid(),'board',current_setting('test.board')::uuid,'test reason');
+select set_config('test.report',(select id::text from public.otaku_content_reports where target_id=current_setting('test.board')::uuid),true);
+do $$begin
+ begin perform public.otaku_moderate_content(current_setting('test.report')::uuid,'hide','test');raise exception 'FAIL nonadmin moderation';exception when insufficient_privilege then null;end;
+ if has_column_privilege('authenticated','public.otaku_notifications','href','UPDATE') then raise exception 'FAIL notification href writable';end if;
+ if has_column_privilege('authenticated','public.otaku_board_posts','event_id','UPDATE') then raise exception 'FAIL board identity writable';end if;
+end $$;
+select set_config('request.jwt.claim.sub','5d2de9e8-09c4-432e-98f0-63b3fd6fd806',true);
+select public.otaku_moderate_content(current_setting('test.report')::uuid,'hide','test hide');
+do $$begin if not exists(select 1 from public.otaku_content_actions where report_id=current_setting('test.report')::uuid) then raise exception 'FAIL missing history';end if;end $$;
+select set_config('request.jwt.claim.sub','30769412-a9b6-40bd-b65c-286f8917f39a',true);
+do $$begin if exists(select 1 from public.otaku_board_posts where id=current_setting('test.board')::uuid) then raise exception 'FAIL hidden visible';end if;end $$;
+select set_config('request.jwt.claim.sub','5d2de9e8-09c4-432e-98f0-63b3fd6fd806',true);
+select public.otaku_moderate_content(current_setting('test.report')::uuid,'restore','test restore');
+insert into public.otaku_user_blocks(blocker_id,blocked_id) values(auth.uid(),'30769412-a9b6-40bd-b65c-286f8917f39a') on conflict do nothing;
+select set_config('request.jwt.claim.sub','30769412-a9b6-40bd-b65c-286f8917f39a',true);
+do $$begin if exists(select 1 from public.otaku_board_posts where id=current_setting('test.board')::uuid) then raise exception 'FAIL reverse block leak';end if;end $$;
+select public.otaku_withdraw('OTAKU LIVEを退会する');
+reset role;
+do $$begin
+ if exists(select 1 from public.otaku_profiles where id='30769412-a9b6-40bd-b65c-286f8917f39a') then raise exception 'FAIL withdrawal';end if;
+ if md5((select jsonb_agg(p order by id)::text from public.profiles p)) is distinct from current_setting('test.student') then raise exception 'FAIL student changed';end if;
+ if (select count(*)::text from auth.users)<>current_setting('test.auth_count') then raise exception 'FAIL shared auth changed';end if;
+end $$;
+select 'PASS: permissions, report, moderation, audit, reverse block, scoped withdrawal; all changes rolled back' as result;
+rollback;
