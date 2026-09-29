@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const tables = { groups: 'otaku_idol_groups', idols: 'otaku_idols', events: 'otaku_events' };
   const labels = { draft: '下書き', published: '公開', archived: '非公開・保管' };
-  const keys = ['name','slug','group_id','title','venue','prefecture','city','starts_at','ends_at','source_url','source_kind','publication_status'];
+  const keys = ['name','slug','group_id','title','venue','prefecture','city','starts_at','ends_at','event_status','status_note','source_url','source_kind','publication_status'];
   let editing = null, records = [], busy = false, generation = 0;
   function resetEditor() {
     editing = null; $('editor').reset(); $('lastChecked').textContent = '';
@@ -54,10 +54,17 @@
     $('group_id').replaceChildren(new Option('グループを選択', ''));
     for (const group of all) $('group_id').add(new Option(`${group.name}（${labels[group.publication_status]}）`,group.id));
   }
+  function ensureEventStatusFields() {
+    if ($('eventStatusField')) return;
+    const wrap = document.createElement('div'); wrap.id = 'eventStatusField';
+    wrap.innerHTML = '<label for="event_status">公演の状態</label><select id="event_status"><option value="scheduled">予定どおり</option><option value="changed">内容変更</option><option value="postponed">延期</option><option value="cancelled">中止</option></select><label for="status_note">変更内容・利用者向け案内（状態変更時は必須）</label><textarea id="status_note" maxlength="1000" rows="4" style="width:100%;font:inherit;padding:12px;border:1px solid #45404f;border-radius:10px;background:#101018;color:inherit"></textarea>';
+    $('eventFields').append(wrap);
+  }
   async function change() {
     if (busy) return;
     setBusy(true); resetEditor(); $('message').textContent = '';
     const kind = $('kind').value;
+    if (kind === 'events') ensureEventStatusFields();
     $('nameField').hidden = kind === 'events'; $('slugField').hidden = kind !== 'groups';
     $('groupField').hidden = kind === 'groups'; $('eventFields').hidden = kind !== 'events';
     for (const key of ['name','slug','group_id','title','venue','starts_at']) $(key).required = key === 'name' ? kind !== 'events' : key === 'slug' ? kind === 'groups' : key === 'group_id' ? kind !== 'groups' : kind === 'events';

@@ -36,6 +36,11 @@
     }
     if (kind === 'events') {
       required('title', 200); required('venue', 200);
+      result.event_status = values.event_status || 'scheduled';
+      if (!['scheduled','changed','postponed','cancelled'].includes(result.event_status)) throw new Error('公演の状態を選択してください。');
+      result.status_note = String(values.status_note || '').trim() || null;
+      if (result.event_status !== 'scheduled' && !result.status_note) throw new Error('延期・中止・変更には利用者向け案内が必要です。');
+      if (result.status_note && result.status_note.length > 1000) throw new Error('変更案内は1000文字以内にしてください。');
       result.starts_at = jst(values.starts_at); result.ends_at = jst(values.ends_at);
       if (!result.starts_at) throw new Error('開演日時は必須です。');
       if (result.ends_at && result.ends_at < result.starts_at) throw new Error('終演日時は開演日時以降にしてください。');
