@@ -1,0 +1,7 @@
+'use strict';
+(async()=>{
+ const user=await otakuGetUser();if(!user)return;let tries=0;
+ const setup=()=>{const search=document.querySelector('.search');if(!search){if(++tries<30)setTimeout(setup,100);return}const params=new URLSearchParams(location.search);document.getElementById('q').value=params.get('q')||'';document.getElementById('monthFilter').value=params.get('month')||'';if(params.get('group')&&document.querySelector(`#groupFilter option[value="${CSS.escape(params.get('group'))}"]`))document.getElementById('groupFilter').value=params.get('group');
+  const b=document.createElement('button');b.type='button';b.textContent='この検索条件を保存';b.style.cssText='margin-top:8px;padding:9px 12px;border-radius:10px;border:1px solid #45404f;background:#22222d;color:#eee';b.onclick=async()=>{const q=document.getElementById('q').value.trim(),group=document.getElementById('groupFilter').value,month=document.getElementById('monthFilter').value;if(!q&&!group&&!month){alert('検索条件を1つ以上指定してください。');return}const name=prompt('保存名を入力してください（80文字以内）。');if(!name?.trim())return;const {error}=await otakuSupabase.from('otaku_saved_searches').insert({user_id:user.id,name:name.trim(),query:q,group_id:group||null,month:month||null});alert(error?'保存できませんでした。':'検索条件を保存しました。')};search.append(b)};setup();
+setTimeout(()=>{const group=new URLSearchParams(location.search).get('group'),select=document.getElementById('groupFilter');if(group&&select?.querySelector(`option[value="${CSS.escape(group)}"]`)){select.value=group;select.dispatchEvent(new Event('change'))}},800);
+})();
