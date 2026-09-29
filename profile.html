@@ -21,6 +21,7 @@
     </div>
     <div class="grid"><div class="field"><label>都道府県</label><input id="prefecture" placeholder="例: 福岡県" /></div><div class="field"><label>同担</label><select id="sameOshi"><option value="depends">どちらでも</option><option value="ok">OK</option><option value="ng">NG</option></select></div></div>
     <div class="field"><label>自己紹介</label><textarea id="bio" maxlength="500"></textarea></div>
+    <div class="field"><strong>公開範囲</strong><label><input id="showAge" type="checkbox"> 年代を公開</label><label><input id="showGender" type="checkbox"> 性別を公開</label><label><input id="showPrefecture" type="checkbox"> 都道府県を公開</label><label><input id="showBio" type="checkbox"> 自己紹介を公開</label><label><input id="showFavorites" type="checkbox"> 推し情報を公開</label></div>
     <button id="save" class="btn primary">プロフィールを保存</button><div id="msg" class="msg"></div>
   </section>
 
@@ -44,12 +45,12 @@
   <p><a href="withdraw.html">退会・データ削除</a></p><p><a href="notifications.html">通知を見る</a></p><p><a href="safety.html">安全設定・自分の募集を管理</a></p>
   <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><p><a id="reportAdminLink" href="reports.html" hidden>通報を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="saved-favorites.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="profile-visibility.js"></script><script src="saved-favorites.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   let user=null, profile=null, idols=[], groups=[];
   async function requireUser(){user=await otakuGetUser(); if(!user){location.href=otakuLoginUrl(location.href);return false} return true}
-  function fill(p){if(!p)return; username.value=p.username||'';displayName.value=p.display_name||'';ageRange.value=p.age_range||'unspecified';gender.value=p.gender||'unspecified';prefecture.value=p.prefecture||'';sameOshi.value=p.same_oshi_policy||'depends';bio.value=p.bio||''}
+  function fill(p){if(!p)return; username.value=p.username||'';displayName.value=p.display_name||'';ageRange.value=p.age_range||'unspecified';gender.value=p.gender||'unspecified';prefecture.value=p.prefecture||'';sameOshi.value=p.same_oshi_policy||'depends';bio.value=p.bio||'';showAge.checked=p.show_age!==false;showGender.checked=p.show_gender!==false;showPrefecture.checked=p.show_prefecture!==false;showBio.checked=p.show_bio!==false;showFavorites.checked=p.show_favorites!==false}
   async function loadEvents(){const {data,error}=await otakuSupabase.from('otaku_event_attendees').select('event_id,otaku_events(id,title,venue,starts_at)').eq('user_id',user.id).order('created_at',{ascending:false});const el=document.getElementById('events');if(error||!data?.length){el.innerHTML='<div class="muted">まだ参戦予定はありません。</div>';return}el.innerHTML=data.filter(x=>x.otaku_events).map(x=>`<div class="event"><a href="event.html?id=${x.otaku_events.id}">${esc(x.otaku_events.title)}</a><div class="muted">${new Date(x.otaku_events.starts_at).toLocaleString('ja-JP')} · ${esc(x.otaku_events.venue)}</div></div>`).join('')}
 
   async function loadTrustSummary(){const {data,error}=await otakuSupabase.from('otaku_reviews').select('rating,punctuality,communication,courtesy,no_show').eq('reviewee_id',user.id).eq('visibility','visible');const el=document.getElementById('trustSummary');if(error||!data?.length){el.textContent='まだ同行評価はありません。';return}const avg=k=>(data.reduce((sum,row)=>sum+(row[k]||0),0)/data.length).toFixed(1);el.innerHTML=`総合 <b>${avg('rating')} / 5</b>（${data.length}件）<br>時間・約束 ${avg('punctuality')}　連絡 ${avg('communication')}　マナー ${avg('courtesy')}<br>無断キャンセル報告 ${data.filter(row=>row.no_show).length}件`}
