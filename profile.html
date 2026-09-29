@@ -24,6 +24,8 @@
     <button id="save" class="btn primary">プロフィールを保存</button><div id="msg" class="msg"></div>
   </section>
 
+  <section class="card"><h2 style="font-size:17px;margin-top:0">同行評価</h2><div id="trustSummary" class="muted">評価を読み込み中...</div></section>
+
   <section class="card"><h2 style="font-size:17px;margin-top:0">通知設定</h2><div class="muted section-note">最初のプロフィール作成時はすべて許可されています。ここでいつでも変更できます。</div><label class="check"><input id="notifyInApp" type="checkbox"> サイト内通知を受け取る</label><label class="check"><input id="notifyDm" type="checkbox"> DM通知を受け取る</label><label class="check"><input id="notifyBoard" type="checkbox"> 掲示板通知を受け取る</label><label class="check"><input id="notifyEvent" type="checkbox"> 参戦予定の公演リマインダーを受け取る</label><button id="saveNotifications" class="btn secondary">通知設定を保存</button><div id="notifyMsg" class="msg"></div></section>
 
   <section class="card">
@@ -49,6 +51,8 @@
   async function requireUser(){user=await otakuGetUser(); if(!user){location.href=otakuLoginUrl(location.href);return false} return true}
   function fill(p){if(!p)return; username.value=p.username||'';displayName.value=p.display_name||'';ageRange.value=p.age_range||'unspecified';gender.value=p.gender||'unspecified';prefecture.value=p.prefecture||'';sameOshi.value=p.same_oshi_policy||'depends';bio.value=p.bio||''}
   async function loadEvents(){const {data,error}=await otakuSupabase.from('otaku_event_attendees').select('event_id,otaku_events(id,title,venue,starts_at)').eq('user_id',user.id).order('created_at',{ascending:false});const el=document.getElementById('events');if(error||!data?.length){el.innerHTML='<div class="muted">まだ参戦予定はありません。</div>';return}el.innerHTML=data.filter(x=>x.otaku_events).map(x=>`<div class="event"><a href="event.html?id=${x.otaku_events.id}">${esc(x.otaku_events.title)}</a><div class="muted">${new Date(x.otaku_events.starts_at).toLocaleString('ja-JP')} · ${esc(x.otaku_events.venue)}</div></div>`).join('')}
+
+  async function loadTrustSummary(){const {data,error}=await otakuSupabase.from('otaku_reviews').select('rating,punctuality,communication,courtesy,no_show').eq('reviewee_id',user.id).eq('visibility','visible');const el=document.getElementById('trustSummary');if(error||!data?.length){el.textContent='まだ同行評価はありません。';return}const avg=k=>(data.reduce((sum,row)=>sum+(row[k]||0),0)/data.length).toFixed(1);el.innerHTML=`総合 <b>${avg('rating')} / 5</b>（${data.length}件）<br>時間・約束 ${avg('punctuality')}　連絡 ${avg('communication')}　マナー ${avg('courtesy')}<br>無断キャンセル報告 ${data.filter(row=>row.no_show).length}件`}
 
   async function loadIdols(){
     const {data,error}=await otakuSupabase.from('otaku_idols').select('id,name,group_id,otaku_idol_groups(id,name)').eq('publication_status','published').eq('is_demo',document.getElementById('showDemo').checked).order('name',{ascending:true});
@@ -106,7 +110,7 @@
   save.onclick=async()=>{const payload={id:user.id,username:username.value.trim(),display_name:displayName.value.trim(),age_range:ageRange.value,gender:gender.value,prefecture:prefecture.value.trim()||null,same_oshi_policy:sameOshi.value,bio:bio.value.trim()||null};if(!payload.username||!payload.display_name){msg.textContent='ユーザーIDと表示名は必須です。';return}const {error}=await otakuSupabase.from('otaku_profiles').upsert(payload,{onConflict:'id'});msg.textContent=error?'保存できませんでした。ユーザーIDが重複していないか確認してください。':'保存しました。';if(!error){profile=payload;const next=otakuNextUrl('profile.html');if(next!=='profile.html') setTimeout(()=>location.href=next,400)}};
   logout.onclick=async()=>{await otakuSupabase.auth.signOut();location.href='index.html'};
   document.getElementById('showDemo').onchange=loadIdols;
-  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites(),loadNotificationPreferences()])})();
+  (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites(),loadNotificationPreferences(),loadTrustSummary()])})();
 </script>
 </body>
 </html>
