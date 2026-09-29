@@ -65,7 +65,7 @@
     if(error){el.innerHTML='<div class="muted">推し情報を取得できませんでした。</div>';return}
     const rows=data||[];
     if(!rows.length){el.innerHTML='<div class="muted">まだ推しが登録されていません。</div>';return}
-    el.innerHTML=rows.map(r=>`<div class="favorite"><div><div class="fav-main"><span class="heart">♥</span>${esc(r.otaku_idols?.name||'非公開のメンバー')}</div><div class="fav-sub">${esc(r.otaku_idols?.otaku_idol_groups?.name||'')}${r.is_primary?' · メイン推し':''}</div></div><div class="fav-actions">${r.is_primary?'<span class="mini main">メイン</span>':`<button class="mini" onclick="setPrimary('${r.idol_id}')">メインにする</button>`}<button class="mini danger" onclick="removeFavorite('${r.idol_id}',${r.is_primary?'true':'false'})">削除</button></div></div>`).join('');
+    el.innerHTML=rows.map(r=>`<div class="favorite"><div><div class="fav-main"><span class="heart">♥</span>${esc(r.otaku_idols?.name||'非公開のメンバー')}</div><div class="fav-sub">${esc(r.otaku_idols?.otaku_idol_groups?.name||'')}${r.is_primary?' · メイン推し':''}</div></div><div class="fav-actions"><a class="mini" href="board.html?idol=${encodeURIComponent(r.idol_id)}">掲示板</a>${r.is_primary?'<span class="mini main">メイン</span>':`<button class="mini" onclick="setPrimary('${r.idol_id}')">メインにする</button>`}<button class="mini danger" onclick="removeFavorite('${r.idol_id}',${r.is_primary?'true':'false'})">削除</button></div></div>`).join('');
   }
 
   async function setPrimary(idolId){
