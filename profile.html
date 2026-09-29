@@ -45,7 +45,7 @@
   <p><a href="withdraw.html">退会・データ削除</a></p><p><a href="notifications.html">通知を見る</a></p><p><a href="safety.html">安全設定・自分の募集を管理</a></p>
   <p><a id="adminLink" href="admin.html" hidden>グループ・メンバー・公演を管理</a></p><p><a id="reportAdminLink" href="reports.html" hidden>通報を管理</a></p><button id="logout" class="btn secondary">ログアウト</button>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="profile-avatar.js"></script><script src="profile-visibility.js"></script><script src="saved-favorites.js"></script><script src="saved-searches.js"></script><script src="saved-companion-list.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="profile-avatar.js"></script><script src="profile-export.js"></script><script src="profile-visibility.js"></script><script src="saved-favorites.js"></script><script src="saved-searches.js"></script><script src="saved-companion-list.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   let user=null, profile=null, idols=[], groups=[];
