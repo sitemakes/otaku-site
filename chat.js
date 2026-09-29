@@ -8,7 +8,7 @@ async function init(){
   if(error){$('chatNotice').textContent='DMを取得できませんでした。ページを再読み込みしてください。';$('send').disabled=true;return}if(!c){unavailable();return}
   conversation=c;otherId=c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id;
   const [{data:p},{data:e}]=await Promise.all([otakuSupabase.from('otaku_profiles').select('display_name,username').eq('id',otherId).maybeSingle(),otakuSupabase.from('otaku_events').select('title,starts_at').eq('id',c.event_id).maybeSingle()]);
-  $('title').textContent=p?.display_name||p?.username||'ユーザー';$('event').textContent=e?.title||'';document.title=$('title').textContent+' | OTAKU LIVE';
+  $('title').textContent=p?.display_name||p?.username||'ユーザー';$('title').href='user.html?id='+encodeURIComponent(otherId);$('event').textContent=e?.title||'';document.title=$('title').textContent+' | OTAKU LIVE';
   $('reportUser').hidden=false;$('blockUser').hidden=false;if(e?.starts_at&&new Date(e.starts_at)<new Date()){$('reviewUser').hidden=false;$('reviewUser').onclick=()=>location.href='review.html?conversation='+encodeURIComponent(id)}
   $('reportUser').onclick=()=>OtakuSafety.report(otherId,{conversationId:id});
   $('blockUser').onclick=()=>OtakuSafety.block(otherId,()=>{unavailable();location.href='safety.html'});
