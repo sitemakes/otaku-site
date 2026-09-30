@@ -2,7 +2,7 @@
 revoke update on public.otaku_notifications from authenticated;
 grant update(read_at) on public.otaku_notifications to authenticated;
 revoke update on public.otaku_board_posts from authenticated;
-grant update(body) on public.otaku_board_posts to authenticated;
+grant update(title,body,category) on public.otaku_board_posts to authenticated;
 drop policy "otaku board visible posts" on public.otaku_board_posts;
 create policy "otaku board visible posts" on public.otaku_board_posts for select to authenticated
 using (otaku_private.board_target_visible(event_id,idol_id) and otaku_private.can_interact(user_id));
@@ -95,4 +95,3 @@ begin
 end $$;
 revoke all on function public.otaku_withdraw(text) from public,anon,authenticated;
 grant execute on function public.otaku_withdraw(text) to authenticated;
-
