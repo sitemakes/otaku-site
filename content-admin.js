@@ -9,9 +9,9 @@
  $('message').textContent='内容を確認し、対応理由を記録してください。';
  for(const r of data){
  const section=document.createElement('section');section.className='card';
- const kindLabel={board:'掲示板の投稿',board_reply:'掲示板の返信',goods:'グッズ交換募集',review:'評価'}[r.kind]||'投稿';
+ const kindLabel={board:'掲示板の投稿',board_reply:'掲示板の返信',goods:'グッズ交換募集',review:'評価',event_record:'公演後の記録'}[r.kind]||'投稿';
  const title=document.createElement('h2');title.textContent=kindLabel+' · '+(r.status==='open'?'受付済み':'対応済み');
- const body=document.createElement('p');body.className='body';body.textContent=r.reason+'\n\n'+(r.snapshot.body||r.snapshot.comment||'コメントなし');
+ const body=document.createElement('p');body.className='body';body.textContent=r.reason+'\n\n'+(r.snapshot.body||r.snapshot.comment||r.snapshot.impression||r.snapshot.setlist||r.snapshot.attendance_note||'コメントなし');
  const reason=document.createElement('input');reason.maxLength=500;reason.placeholder='対応理由（必須）';reason.setAttribute('aria-label','対応理由');
  section.append(title,body,reason);
  for(const [action,label] of [['hide','非表示'],['restore','再公開'],['resolve','対応完了']]){
