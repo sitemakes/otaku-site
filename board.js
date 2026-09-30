@@ -5,7 +5,7 @@
   const eventId = params.get('event'), idolId = params.get('idol');
   const requestedCategory = params.get('category') || '';
   const labels = {general:'雑談・質問',fan:'ファン交流',goods:'グッズ',venue:'会場・アクセス',event_info:'公演情報',companion:'同行募集',seating:'座席・入場',other:'その他'};
-  let user = null, isAdmin = false, loading = false;
+  let user = null, isAdmin = false, loading = false, allPosts = [], allReplies = [], savedPostIds = new Set();
 
   function categoryList() {
     return eventId ? ['event_info','venue','goods','companion','seating','other']
@@ -70,14 +70,34 @@
     const {error} = await otakuSupabase.from('otaku_board_posts').delete().eq('id', id);
     if (error) alert('投稿を削除できませんでした。'); else await load();
   }
+  async function toggleSave(post, button) {
+    button.disabled = true;
+    const saved = savedPostIds.has(post.id);
+    const result = saved
+      ? await otakuSupabase.from('otaku_saved_board_posts').delete().eq('post_id', post.id).eq('user_id', user.id)
+      : await otakuSupabase.from('otaku_saved_board_posts').insert({post_id:post.id,user_id:user.id});
+    button.disabled = false;
+    if (result.error) { alert('保存状態を変更できませんでした。'); return; }
+    if (saved) savedPostIds.delete(post.id); else savedPostIds.add(post.id);
+    renderPosts();
+  }
+  async function changeResolved(post) {
+    const {error} = await otakuSupabase.from('otaku_board_posts').update({resolved:!post.resolved}).eq('id',post.id);
+    if (error) alert('解決状態を変更できませんでした。'); else await load();
+  }
   function renderPost(post, replies) {
     const article = document.createElement('article'); article.className = 'post'; article.id = `post-${post.id}`;
     article.append(metaLine(post, post.pinned));
+    if (post.resolved) { const tag=document.createElement('span'); tag.className='resolved'; tag.textContent='解決済み'; article.append(tag); }
     const heading = document.createElement('strong'); heading.className = 'post-title'; heading.textContent = post.title || '投稿';
     article.append(heading, document.createTextNode(post.body));
     const actions = document.createElement('div'); actions.className = 'actions';
-    if (post.user_id === user.id) actions.append(actionButton('削除', () => removePost(post.id), true));
+    if (post.user_id === user.id) {
+      actions.append(actionButton(post.resolved ? '未解決に戻す' : '解決済みにする', () => changeResolved(post)));
+      actions.append(actionButton('削除', () => removePost(post.id), true));
+    }
     else actions.append(actionButton('通報', () => otakuReportContent('board', post.id)));
+    actions.append(actionButton(savedPostIds.has(post.id) ? '保存済み ★' : '保存', event => toggleSave(post, event.currentTarget)));
     if (isAdmin) actions.append(actionButton(post.pinned ? '固定解除' : '固定', async event => {
       event.currentTarget.disabled = true;
       const {error} = await otakuSupabase.rpc('otaku_set_board_pinned',{post_id:post.id,next_pinned:!post.pinned});
@@ -96,28 +116,48 @@
     }
     article.append(replyForm); return article;
   }
+  function renderPosts() {
+    const term = $('postSearch').value.trim().toLocaleLowerCase();
+    const resolution = $('resolutionFilter').value;
+    const filtered = allPosts.filter(post => {
+      if (resolution === 'open' && post.resolved) return false;
+      if (resolution === 'resolved' && !post.resolved) return false;
+      if ($('savedOnly').checked && !savedPostIds.has(post.id)) return false;
+      if (!term) return true;
+      return [post.title,post.body,profileName(post)].some(value => String(value || '').toLocaleLowerCase().includes(term));
+    });
+    const sort = $('postSort').value;
+    filtered.sort((a,b) => sort === 'old'
+      ? new Date(a.created_at) - new Date(b.created_at)
+      : sort === 'pinned' ? Number(b.pinned)-Number(a.pinned) || new Date(b.created_at)-new Date(a.created_at)
+      : new Date(b.created_at) - new Date(a.created_at));
+    const byPost = new Map();
+    for (const reply of allReplies) { if (!byPost.has(reply.post_id)) byPost.set(reply.post_id, []); byPost.get(reply.post_id).push(reply); }
+    $('posts').replaceChildren(...(filtered.length ? filtered.map(post => renderPost(post, byPost.get(post.id) || [])) : [document.createTextNode(allPosts.length ? '条件に合う投稿がありません。' : 'まだ投稿はありません。')]));
+  }
   async function load() {
     if (!user) { $('posts').textContent = '掲示板を見るにはログインしてください。'; return; }
     const selected = $('category').value;
-    let query = otakuSupabase.from('otaku_board_posts').select('id,user_id,title,body,category,pinned,created_at,otaku_profiles(display_name,username)').eq('category',selected).order('pinned',{ascending:false}).order('created_at',{ascending:false});
+    let query = otakuSupabase.from('otaku_board_posts').select('id,user_id,title,body,category,pinned,resolved,created_at,otaku_profiles(display_name,username)').eq('category',selected).order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(200);
     if (eventId) query = query.eq('event_id',eventId); else if (idolId) query = query.eq('idol_id',idolId); else query = query.is('event_id',null).is('idol_id',null);
-    const {data:posts,error} = await query;
-    if (error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
+    const [{data:posts,error}, savedResult] = await Promise.all([query, otakuSupabase.from('otaku_saved_board_posts').select('post_id').eq('user_id',user.id)]);
+    if (error || savedResult.error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
+    allPosts = posts || []; savedPostIds = new Set((savedResult.data || []).map(row => row.post_id));
     let replies = [];
     if (posts.length) {
-      const result = await otakuSupabase.from('otaku_board_replies').select('id,post_id,user_id,body,created_at,otaku_profiles(display_name,username)').in('post_id',posts.map(post=>post.id)).order('created_at');
+      const result = await otakuSupabase.from('otaku_board_replies').select('id,post_id,user_id,body,created_at,otaku_profiles(display_name,username)').in('post_id',allPosts.map(post=>post.id)).order('created_at');
       if (result.error) { $('posts').textContent = '返信を読み込めませんでした。'; return; }
       replies = result.data;
     }
-    const byPost = new Map(posts.map(post => [post.id, []]));
-    for (const reply of replies) byPost.get(reply.post_id)?.push(reply);
-    $('posts').replaceChildren(...(posts.length ? posts.map(post => renderPost(post, byPost.get(post.id))) : [document.createTextNode('まだ投稿はありません。')]));
+    allReplies = replies;
+    renderPosts();
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'center'});
   }
   $('category').onchange = async () => {
     history.replaceState(null,'',boardUrl($('category').value));
     $('context').textContent = `カテゴリ：${labels[$('category').value]}`; await load();
   };
+  ['postSearch','postSort','resolutionFilter','savedOnly'].forEach(id => $(id).addEventListener('input', renderPosts));
   $('send').onclick = async () => {
     const title = $('postTitle').value.trim(), body = $('body').value.trim();
     if (!title || !body || loading) return;

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>掲示板 | OTAKU LIVE</title>
   <style>
-    body{margin:0;background:#0b0b10;color:#f7f7fb;font-family:system-ui,sans-serif}.wrap{max-width:700px;margin:auto;padding:20px 16px 60px}a{color:#d8c6ff}.card{background:#15151d;border:1px solid #343042;border-radius:16px;padding:16px;margin:14px 0}input,select,textarea,button{font:inherit;padding:12px;border-radius:10px;border:1px solid #45404f;background:#101018;color:inherit;width:100%;box-sizing:border-box}button{background:#7040c5;font-weight:700;cursor:pointer;margin-top:8px}button:disabled{opacity:.55;cursor:wait}.post{border-top:1px solid #343042;padding:18px 0;white-space:pre-wrap;overflow-wrap:anywhere}.post:first-child{border-top:0}.meta{color:#aeb0bd;font-size:13px}.post-title{display:block;font-size:17px;margin:8px 0}.actions{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.actions button{width:auto;padding:7px 11px;font-size:12px;margin:0}.danger{background:#3a1830}.status{color:#f0d3ef}.pin{color:#f5d27b;font-size:12px;margin-right:6px}.hint{color:#aeb0bd;font-size:13px;line-height:1.6}label{display:block;font-size:13px;margin:10px 0 5px}.replies{margin:14px 0 0 18px;padding-left:12px;border-left:2px solid #343042;white-space:normal}.reply{padding:11px 0;border-top:1px solid #2a2734;white-space:pre-wrap}.reply:first-child{border-top:0}.reply-form{margin-top:10px}.reply-form textarea{min-height:84px}.reply-count{color:#cdb7f5;font-size:13px}
+    body{margin:0;background:#0b0b10;color:#f7f7fb;font-family:system-ui,sans-serif}.wrap{max-width:700px;margin:auto;padding:20px 16px 60px}a{color:#d8c6ff}.card{background:#15151d;border:1px solid #343042;border-radius:16px;padding:16px;margin:14px 0}input,select,textarea,button{font:inherit;padding:12px;border-radius:10px;border:1px solid #45404f;background:#101018;color:inherit;width:100%;box-sizing:border-box}button{background:#7040c5;font-weight:700;cursor:pointer;margin-top:8px}button:disabled{opacity:.55;cursor:wait}.post{border-top:1px solid #343042;padding:18px 0;white-space:pre-wrap;overflow-wrap:anywhere}.post:first-child{border-top:0}.meta{color:#aeb0bd;font-size:13px}.post-title{display:block;font-size:17px;margin:8px 0}.actions{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.actions button{width:auto;padding:7px 11px;font-size:12px;margin:0}.danger{background:#3a1830}.status{color:#f0d3ef}.pin{color:#f5d27b;font-size:12px;margin-right:6px}.resolved{display:inline-block;color:#a7f3d0;background:#18372c;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:7px}.hint{color:#aeb0bd;font-size:13px;line-height:1.6}label{display:block;font-size:13px;margin:10px 0 5px}.board-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.board-tools input,.board-tools select{width:100%}.check{display:flex;align-items:center;gap:7px;grid-column:1/-1;margin:0}.check input{width:auto}.replies{margin:14px 0 0 18px;padding-left:12px;border-left:2px solid #343042;white-space:normal}.reply{padding:11px 0;border-top:1px solid #2a2734;white-space:pre-wrap}.reply:first-child{border-top:0}.reply-form{margin-top:10px}.reply-form textarea{min-height:84px}.reply-count{color:#cdb7f5;font-size:13px}
   </style>
 </head>
 <body><main class="wrap">
@@ -17,7 +17,12 @@
     <label for="body">本文</label><textarea id="body" maxlength="2000" rows="5" placeholder="この掲示板について書き込む"></textarea>
     <button id="send" type="button">投稿する</button><p id="status" class="status" role="status" aria-live="polite"></p>
   </section>
-  <section class="card"><div id="posts">読み込み中…</div></section>
+  <section class="card"><div class="board-tools">
+    <input id="postSearch" type="search" placeholder="タイトル・本文・投稿者で検索" aria-label="投稿を検索">
+    <select id="postSort" aria-label="並び順"><option value="new">新しい順</option><option value="old">古い順</option><option value="pinned">固定を先に</option></select>
+    <select id="resolutionFilter" aria-label="解決状態"><option value="">すべて</option><option value="open">未解決</option><option value="resolved">解決済み</option></select>
+    <label class="check"><input id="savedOnly" type="checkbox"> 保存した投稿だけ</label>
+  </div><div id="posts">読み込み中…</div></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script><script src="content-safety.js"></script><script src="board.js"></script>

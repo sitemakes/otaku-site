@@ -2,7 +2,8 @@
 alter table public.otaku_board_posts
   add column if not exists title text not null default '',
   add column if not exists category text not null default 'other',
-  add column if not exists pinned boolean not null default false;
+  add column if not exists pinned boolean not null default false,
+  add column if not exists resolved boolean not null default false;
 
 alter table public.otaku_board_posts
   drop constraint if exists otaku_board_one_target;
@@ -51,7 +52,7 @@ begin
   if auth.uid() is null or new.user_id<>auth.uid() then
     raise exception 'board_not_allowed' using errcode='42501';
   end if;
-  if tg_op='UPDATE' and (to_jsonb(new)-array['body','title','category','updated_at'])
+  if tg_op='UPDATE' and (to_jsonb(new)-array['body','title','category','resolved','updated_at'])
       is distinct from (to_jsonb(old)-array['body','title','category','updated_at']) then
     raise exception 'board_not_allowed' using errcode='42501';
   end if;
@@ -96,7 +97,7 @@ begin
 end $$;
 
 revoke update on public.otaku_board_posts from authenticated;
-grant update(title,body,category) on public.otaku_board_posts to authenticated;
+grant update(title,body,category,resolved) on public.otaku_board_posts to authenticated;
 
 create or replace function public.otaku_set_board_pinned(post_id uuid, next_pinned boolean)
 returns boolean language plpgsql security definer set search_path=''
