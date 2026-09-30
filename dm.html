@@ -23,21 +23,24 @@ let user=null;
 async function init(){
   user=await otakuGetUser();
   if(!user){location.href=otakuLoginUrl(location.href);return}
-  const {data:convs,error}=await otakuSupabase.from('otaku_conversations').select('id,event_id,owner_user_id,requester_user_id,created_at').order('created_at',{ascending:false});
+  const {data:convs,error}=await otakuSupabase.from('otaku_conversations').select('id,event_id,goods_post_id,owner_user_id,requester_user_id,created_at').order('created_at',{ascending:false});
   if(error){list.innerHTML='<div class="empty">DMを取得できませんでした。</div>';return}
-  if(!convs?.length){list.innerHTML='<div class="empty">まだDMはありません。<br>同行募集からメッセージを送ると、ここに表示されます。</div>';return}
+  if(!convs?.length){list.innerHTML='<div class="empty">まだDMはありません。<br>同行募集やグッズ交換からメッセージを送ると、ここに表示されます。</div>';return}
   const otherIds=[...new Set(convs.map(c=>c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id))];
-  const eventIds=[...new Set(convs.map(c=>c.event_id))];
+  const eventIds=[...new Set(convs.map(c=>c.event_id).filter(Boolean))];
+  const goodsIds=[...new Set(convs.map(c=>c.goods_post_id).filter(Boolean))];
   const convIds=convs.map(c=>c.id);
-  const [{data:profiles},{data:events},{data:messages}]=await Promise.all([
+  const [{data:profiles},{data:events},{data:goods},{data:messages}]=await Promise.all([
     otakuSupabase.from('otaku_profiles').select('id,display_name,username').in('id',otherIds),
-    otakuSupabase.from('otaku_events').select('id,title').in('id',eventIds),
+    eventIds.length?otakuSupabase.from('otaku_events').select('id,title').in('id',eventIds):Promise.resolve({data:[]}),
+    goodsIds.length?otakuSupabase.from('otaku_goods_posts').select('id,item_name').in('id',goodsIds):Promise.resolve({data:[]}),
     otakuSupabase.from('otaku_messages').select('conversation_id,content,created_at').in('conversation_id',convIds).order('created_at',{ascending:false})
   ]);
   const pMap=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
   const eMap=Object.fromEntries((events||[]).map(e=>[e.id,e]));
+  const gMap=Object.fromEntries((goods||[]).map(g=>[g.id,g]));
   const latest={}; for(const m of messages||[]){if(!latest[m.conversation_id])latest[m.conversation_id]=m}
-  list.innerHTML=convs.map(c=>{const other=c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id;const p=pMap[other]||{};const e=eMap[c.event_id]||{};const m=latest[c.id];return `<a class="card" href="chat.html?id=${encodeURIComponent(c.id)}"><div class="name">${esc(p.display_name||p.username||'ユーザー')}</div><div class="event">${esc(e.title||'公演')}</div><div class="preview">${m?esc(m.content):'まだメッセージはありません'}</div></a>`}).join('');
+  list.innerHTML=convs.map(c=>{const other=c.owner_user_id===user.id?c.requester_user_id:c.owner_user_id;const p=pMap[other]||{};const e=eMap[c.event_id]||{};const g=gMap[c.goods_post_id]||{};const m=latest[c.id];const context=c.goods_post_id?'グッズ交換 · '+(g.item_name||'募集'):(e.title||'公演');return `<a class="card" href="chat.html?id=${encodeURIComponent(c.id)}"><div class="name">${esc(p.display_name||p.username||'ユーザー')}</div><div class="event">${esc(context)}</div><div class="preview">${m?esc(m.content):'まだメッセージはありません'}</div></a>`}).join('');
 }
 init();
 window.addEventListener('focus',init);
