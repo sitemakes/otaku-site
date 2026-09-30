@@ -36,7 +36,8 @@
   function metaLine(row, pinned = false) {
     const meta = document.createElement('div'); meta.className = 'meta';
     if (pinned) { const pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '📌 固定'; meta.append(pin); }
-    meta.append(`${profileName(row)} · ${new Date(row.created_at).toLocaleString('ja-JP')}`);
+    const profile = document.createElement('a'); profile.href = `user.html?id=${encodeURIComponent(row.user_id)}`; profile.textContent = profileName(row); profile.style.marginRight = '4px';
+    meta.append(profile, `· ${new Date(row.created_at).toLocaleString('ja-JP')}`);
     return meta;
   }
   async function removeReply(id) {
