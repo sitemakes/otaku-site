@@ -10,15 +10,22 @@
   const profile=viewer?await otakuGetProfile(viewer.id):null;
   const endedAt=new Date(event.ends_at||event.starts_at),ended=endedAt<=new Date();
   let records=[];
-  const initialRecords=await otakuSupabase.from('otaku_event_records').select('id,user_id,impression,setlist,attendance_note,visibility,hidden,updated_at,otaku_profiles(display_name,username)').eq('event_id',eventId).order('updated_at',{ascending:false}).limit(50);
+  let authorNames={};
+  const recordColumns='id,user_id,impression,setlist,attendance_note,visibility,hidden,updated_at';
+  const initialRecords=await otakuSupabase.from('otaku_event_records').select(recordColumns).eq('event_id',eventId).order('updated_at',{ascending:false}).limit(50);
   records=initialRecords.data||[];
   const styleInput=element=>{element.style.cssText='width:100%;box-sizing:border-box;margin-top:5px;padding:11px;border-radius:10px;border:1px solid #45404f;background:#101018;color:#f7f7fb;font:inherit'};
   const text=value=>{const node=document.createElement('div');node.className='muted';node.style.whiteSpace='pre-wrap';node.textContent=value;return node};
   const heading=value=>{const node=document.createElement('strong');node.style.display='block';node.style.marginTop='12px';node.textContent=value;return node};
   async function load(){
-    const {data,error}=await otakuSupabase.from('otaku_event_records').select('id,user_id,impression,setlist,attendance_note,visibility,hidden,updated_at,otaku_profiles(display_name,username)').eq('event_id',eventId).order('updated_at',{ascending:false}).limit(50);
+    const {data,error}=await otakuSupabase.from('otaku_event_records').select(recordColumns).eq('event_id',eventId).order('updated_at',{ascending:false}).limit(50);
     if(error){list.textContent='記録を読み込めませんでした。';return}
     records=data||[];renderList();
+    if(viewer&&records.length){
+      const ids=[...new Set(records.map(row=>row.user_id))];
+      const result=await otakuSupabase.from('otaku_public_profiles').select('id,display_name,username').in('id',ids);
+      if(!result.error){authorNames=Object.fromEntries((result.data||[]).map(profile=>[profile.id,profile.display_name||profile.username]));renderList()}
+    }
   }
   function renderList(){
     list.replaceChildren();
@@ -26,7 +33,7 @@
     if(!publicRows.length){list.textContent='まだ公開された記録はありません。';return}
     for(const row of publicRows){
       const item=document.createElement('article');item.className='post';
-      const who=document.createElement('div');who.className='who';const link=document.createElement('a');link.href=`user.html?id=${encodeURIComponent(row.user_id)}`;link.textContent=row.otaku_profiles?.display_name||row.otaku_profiles?.username||'ユーザー';who.append(link);if(row.user_id===viewer?.id&&row.visibility==='private')who.append(' · 自分だけ');item.append(who);
+      const who=document.createElement('div');who.className='who';const author=viewer?document.createElement('a'):document.createElement('span');if(viewer)author.href=`user.html?id=${encodeURIComponent(row.user_id)}`;author.textContent=authorNames[row.user_id]||'ユーザー';who.append(author);if(row.user_id===viewer?.id&&row.visibility==='private')who.append(' · 自分だけ');item.append(who);
       if(row.impression)item.append(heading('感想'),text(row.impression));
       if(row.setlist)item.append(heading('セットリスト'),text(row.setlist));
       if(row.attendance_note)item.append(heading('参戦メモ'),text(row.attendance_note));
@@ -46,7 +53,7 @@
     const note=document.createElement('textarea');note.maxLength=2000;note.rows=3;note.placeholder='参戦メモ（任意）';note.value=existing?.attendance_note||'';styleInput(note);
     const visibility=document.createElement('select');visibility.append(new Option('公開する','public'),new Option('自分だけ','private'));visibility.value=existing?.visibility||'public';styleInput(visibility);
     const save=document.createElement('button');save.type='button';save.className='btn primary';save.textContent=existing?'記録を更新する':'記録を残す';save.style.marginTop='12px';const status=document.createElement('p');status.className='notice';
-    save.onclick=async()=>{const payload={event_id:eventId,user_id:viewer.id,impression:impression.value.trim()||null,setlist:setlist.value.trim()||null,attendance_note:note.value.trim()||null,visibility:visibility.value};if(!payload.impression&&!payload.setlist&&!payload.attendance_note){status.textContent='感想・セットリスト・参戦メモのいずれかを入力してください。';return}save.disabled=true;const record=records.find(row=>row.user_id===viewer.id);const result=record?await otakuSupabase.from('otaku_event_records').update(payload).eq('id',record.id):await otakuSupabase.from('otaku_event_records').insert(payload);save.disabled=false;if(result.error){status.textContent='保存できませんでした。公演終了時刻と入力内容を確認してください。';return}status.textContent='保存しました。';await load()};
+    save.onclick=async()=>{const payload={impression:impression.value.trim()||null,setlist:setlist.value.trim()||null,attendance_note:note.value.trim()||null,visibility:visibility.value};if(!payload.impression&&!payload.setlist&&!payload.attendance_note){status.textContent='感想・セットリスト・参戦メモのいずれかを入力してください。';return}save.disabled=true;const record=records.find(row=>row.user_id===viewer.id);const result=record?await otakuSupabase.from('otaku_event_records').update(payload).eq('id',record.id).select('id'):await otakuSupabase.from('otaku_event_records').insert({event_id:eventId,user_id:viewer.id,...payload}).select('id');save.disabled=false;if(result.error||!result.data?.length){status.textContent='保存できませんでした。公演終了時刻と入力内容を確認してください。';return}status.textContent='保存しました。';save.textContent='記録を更新する';await load()};
     for(const [label,input] of [['感想',impression],['セットリスト',setlist],['参戦メモ',note],['公開範囲',visibility]]){const l=document.createElement('label');l.textContent=label;l.style.display='block';l.style.marginTop='10px';l.append(input);form.append(l)}form.append(save,status);card.append(form)
   }
   card.append(list);
