@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">OTAKU LIVE</title><desc id="desc">アイドルライブの公演情報</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#20143a"/><stop offset="1" stop-color="#8b2f72"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="#0b0b10"/><rect x="36" y="36" width="1128" height="558" rx="42" fill="url(#bg)"/>
+  <circle cx="1030" cy="130" r="170" fill="#ec4899" opacity=".22"/><circle cx="190" cy="560" r="220" fill="#8b5cf6" opacity=".2"/>
+  <text x="100" y="220" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="700">OTAKU LIVE</text>
+  <text x="100" y="310" fill="#f2d8ff" font-family="Arial, sans-serif" font-size="38">公演情報・同行募集・現地交流</text>
+  <text x="100" y="500" fill="#fff" opacity=".8" font-family="Arial, sans-serif" font-size="28">ライブを起点に、ファン同士をつなぐ</text>
+</svg>

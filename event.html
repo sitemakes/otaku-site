@@ -4,9 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>公演詳細 | OTAKU LIVE</title>
+  <meta name="description" content="OTAKU LIVEの公演詳細。開催日時、会場、同行募集、掲示板を確認できます。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="OTAKU LIVE" />
+  <meta property="og:title" content="公演詳細 | OTAKU LIVE" />
+  <meta property="og:description" content="開催日時、会場、同行募集、掲示板を確認できます。" />
+  <meta property="og:image" content="/og-default.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="公演詳細 | OTAKU LIVE" />
+  <meta name="twitter:description" content="開催日時、会場、同行募集、掲示板を確認できます。" />
+  <meta name="twitter:image" content="/og-default.svg" />
   <style>
     :root{--bg:#0b0b10;--card:#15151d;--text:#f7f7fb;--muted:#9da0ad;--accent:#8b5cf6;--accent2:#ec4899;--line:#2a2a36;--ok:#34d399}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:760px;margin:0 auto;padding:18px 16px 96px}.back{display:inline-block;color:#c7c8d0;text-decoration:none;margin-bottom:16px}.hero{padding:22px;border-radius:24px;background:radial-gradient(circle at top right,rgba(139,92,246,.28),transparent 40%),linear-gradient(135deg,#1f1733,#171722);border:1px solid #343042}.hero h1{font-size:25px;line-height:1.3;margin:0 0 10px}.meta{color:#b9bbc7;line-height:1.8}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 20px}.btn{border:none;border-radius:16px;padding:14px 12px;font-size:15px;font-weight:800;cursor:pointer}.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}.primary.on{background:var(--ok);color:#08130f}.secondary{background:#242431;color:#eee;border:1px solid #343444}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0}.card h2{font-size:17px;margin:0 0 10px}.muted{color:var(--muted);font-size:14px;line-height:1.7}.stat{display:flex;gap:10px;flex-wrap:wrap}.chip{background:#20202a;border-radius:999px;padding:7px 10px;color:#d9dae2;font-size:13px}.notice{font-size:12px;color:#9294a1;margin-top:10px}.error{padding:20px;background:#2a1519;border:1px solid #5c2c34;border-radius:16px;color:#ffc7cf}.post{padding:13px;border-radius:14px;background:#1e1e28;border:1px solid var(--line);margin-top:10px}.post .who{font-weight:800;margin-bottom:5px}.postbody{margin-top:9px;line-height:1.6}.postactions{margin-top:10px}.msgbtn{width:100%;border:1px solid #4b4167;background:#282238;color:#fff;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer}.msgbtn:disabled{opacity:.55;cursor:default}.postmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.smallchip{display:inline-flex;align-items:center;gap:3px;padding:5px 8px;border-radius:999px;background:#292934;color:#dedee8;font-size:12px}.smallchip.oshi{background:#3a1830;color:#ffb4da}.smallchip.same-ok{background:#173a2d;color:#a7f3d0}.smallchip.same-ng{background:#391d22;color:#ffbdc8}.smallchip.same-depends{background:#292934;color:#d9dae2}
+    @media(max-width:520px){.actions{grid-template-columns:1fr 1fr}.actions .share-btn{grid-column:1 / -1}}
   </style>
 </head>
 <body>
@@ -43,6 +54,12 @@
     const e=eventRes.data,posts=postRes.data||[];
     if(eventRes.error||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return}
     eventData=e; document.title=e.title+' | OTAKU LIVE';
+    const metaTitle=e.title+' | OTAKU LIVE',metaDescription=`${e.title}の開催日時、会場、同行募集、掲示板を確認できます。`;
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content',metaTitle);
+    document.querySelector('meta[name="twitter:title"]')?.setAttribute('content',metaTitle);
+    document.querySelector('meta[name="description"]')?.setAttribute('content',metaDescription);
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content',metaDescription);
+    document.querySelector('meta[name="twitter:description"]')?.setAttribute('content',metaDescription);
 
     favoriteMap={};
     const ids=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
@@ -60,7 +77,7 @@
   function render(attendeeCount,posts){
     root.innerHTML=`
       <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
-      ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button></div>
+      ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 同行募集 ${posts.length}件</span></div></section>
       <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
@@ -72,10 +89,17 @@
       }).join(''):'<div class="muted">まだ募集はありません。</div>'}</section>`;
     attendBtn.onclick=toggleAttendance;
     companionBtn.onclick=()=>{if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}location.href=`companion.html?event=${encodeURIComponent(id)}`};
+    shareBtn.onclick=shareEvent;
     document.querySelectorAll('.msgbtn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>openConversation(btn.dataset.post,btn.dataset.owner,btn)));
     document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
     document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
     document.querySelectorAll('[data-block]').forEach(btn=>btn.onclick=()=>OtakuSafety.block(btn.dataset.block,load));
+  }
+  function shareEvent(){
+    const shareUrl=new URL(`api/event-share?id=${encodeURIComponent(id)}`,location.origin).href;
+    const shareData={title:eventData.title+' | OTAKU LIVE',text:`${eventData.title}の公演情報`,url:shareUrl};
+    if(navigator.share){navigator.share(shareData).catch(()=>{});return}
+    navigator.clipboard?.writeText(shareUrl).then(()=>alert('共有リンクをコピーしました。')).catch(()=>window.prompt('共有リンクをコピーしてください',shareUrl));
   }
   async function toggleAttendance(){
     if(!user){location.href=otakuLoginUrl(location.href);return} if(!profile){location.href=otakuProfileUrl(location.href);return} attendBtn.disabled=true;
