@@ -152,7 +152,7 @@
     let query = otakuSupabase.from('otaku_board_posts').select('id,user_id,title,body,category,pinned,resolved,created_at,otaku_profiles(display_name,username)').eq('category',selected).order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(200);
     if (eventId) query = query.eq('event_id',eventId); else if (idolId) query = query.eq('idol_id',idolId); else query = query.is('event_id',null).is('idol_id',null);
     const [{data:posts,error}, savedResult] = await Promise.all([query, otakuSupabase.from('otaku_saved_board_posts').select('post_id').eq('user_id',user.id)]);
-    if (error || savedResult.error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
+    if (error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
     allPosts = posts || []; savedPostIds = new Set((savedResult.data || []).map(row => row.post_id)); const countResult = allPosts.length ? await otakuSupabase.from('otaku_board_reaction_counts').select('post_id,reaction_count').in('post_id',allPosts.map(post => post.id)) : {data:[],error:null}; reactionCounts = new Map((countResult.data || []).map(row => [row.post_id, Number(row.reaction_count) || 0]));
     let replies = [];
     if (posts.length) {
