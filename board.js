@@ -84,14 +84,12 @@
   }
   async function toggleReaction(post, button) {
     button.disabled = true;
-    const reacted = reactedPostIds.has(post.id);
-    const result = reacted
-      ? await otakuSupabase.from('otaku_board_reactions').delete().eq('post_id', post.id).eq('user_id', user.id)
-      : await otakuSupabase.from('otaku_board_reactions').insert({post_id:post.id,user_id:user.id});
+    const result = await otakuSupabase.rpc('otaku_toggle_board_reaction',{target_post:post.id});
     button.disabled = false;
     if (result.error) { alert('リアクションを変更できませんでした。'); return; }
-    if (reacted) { reactedPostIds.delete(post.id); reactionCounts.set(post.id, Math.max(0, (reactionCounts.get(post.id) || 0) - 1)); }
-    else { reactedPostIds.add(post.id); reactionCounts.set(post.id, (reactionCounts.get(post.id) || 0) + 1); }
+    const reacted = Boolean(result.data);
+    if (reacted) { reactedPostIds.add(post.id); reactionCounts.set(post.id, (reactionCounts.get(post.id) || 0) + 1); }
+    else { reactedPostIds.delete(post.id); reactionCounts.set(post.id, Math.max(0, (reactionCounts.get(post.id) || 0) - 1)); }
     renderPosts();
   }
   async function changeResolved(post) {
@@ -153,9 +151,9 @@
     const selected = $('category').value;
     let query = otakuSupabase.from('otaku_board_posts').select('id,user_id,title,body,category,pinned,resolved,created_at,otaku_profiles(display_name,username)').eq('category',selected).order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(200);
     if (eventId) query = query.eq('event_id',eventId); else if (idolId) query = query.eq('idol_id',idolId); else query = query.is('event_id',null).is('idol_id',null);
-    const [{data:posts,error}, savedResult, reactionResult] = await Promise.all([query, otakuSupabase.from('otaku_saved_board_posts').select('post_id').eq('user_id',user.id), otakuSupabase.from('otaku_board_reactions').select('post_id').eq('user_id',user.id)]);
-    if (error || savedResult.error || reactionResult.error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
-    allPosts = posts || []; savedPostIds = new Set((savedResult.data || []).map(row => row.post_id)); reactedPostIds = new Set((reactionResult.data || []).map(row => row.post_id)); const countResult = allPosts.length ? await otakuSupabase.from('otaku_board_reaction_counts').select('post_id,reaction_count').in('post_id',allPosts.map(post => post.id)) : {data:[],error:null}; reactionCounts = new Map((countResult.data || []).map(row => [row.post_id, Number(row.reaction_count) || 0]));
+    const [{data:posts,error}, savedResult] = await Promise.all([query, otakuSupabase.from('otaku_saved_board_posts').select('post_id').eq('user_id',user.id)]);
+    if (error || savedResult.error) { $('posts').textContent = '掲示板を読み込めませんでした。'; return; }
+    allPosts = posts || []; savedPostIds = new Set((savedResult.data || []).map(row => row.post_id)); const countResult = allPosts.length ? await otakuSupabase.from('otaku_board_reaction_counts').select('post_id,reaction_count').in('post_id',allPosts.map(post => post.id)) : {data:[],error:null}; reactionCounts = new Map((countResult.data || []).map(row => [row.post_id, Number(row.reaction_count) || 0]));
     let replies = [];
     if (posts.length) {
       const result = await otakuSupabase.from('otaku_board_replies').select('id,post_id,user_id,body,created_at,otaku_profiles(display_name,username)').in('post_id',allPosts.map(post=>post.id)).order('created_at');
