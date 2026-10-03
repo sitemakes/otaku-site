@@ -5,6 +5,7 @@
 </head><body><main class="wrap"><a href="javascript:history.back()">← 戻る</a>
 <section class="card"><div class="profile-head"><div id="avatarSlot"></div><div><h1 id="name">プロフィール</h1><div id="basic" class="muted"></div></div></div><div style="margin-top:14px"><button id="follow" class="follow" type="button" hidden></button><div id="followStatus" class="status" role="status" aria-live="polite"></div></div></section>
 <section class="card"><h2>同行評価</h2><div id="summary" class="muted">読み込み中…</div><div id="reviews"></div></section>
+<section class="card"><h2>活動実績</h2><div id="stats" class="muted">読み込み中…</div></section>
 <section class="card"><h2>活動</h2><div id="activity" class="muted">読み込み中…</div></section></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="content-safety.js"></script>
 <script>
@@ -15,7 +16,17 @@ const categoryLabels={general:'総合',event_info:'公演情報',goods:'グッ�
 async function toggleFollow(){if(!viewer||busy)return;busy=true;follow.disabled=true;const result=following?await otakuSupabase.from('otaku_user_follows').delete().eq('follower_id',viewer.id).eq('followed_id',id):await otakuSupabase.from('otaku_user_follows').insert({follower_id:viewer.id,followed_id:id});if(result.error){followStatus.textContent='フォロー状態を変更できませんでした。';}else{following=!following;renderFollow();followStatus.textContent=following?'フォローしました。':'フォローを解除しました。';}busy=false;follow.disabled=false}
 function renderFollow(){follow.hidden=!viewer||viewer.id===id;follow.className=`follow${following?' off':''}`;follow.textContent=following?'フォロー中':'フォローする'}
 function activityEmpty(text='公開されている活動はまだありません。'){activity.innerHTML=`<div class="muted">${text}</div>`}
+async function loadStats(profile){
+  const results=await Promise.all([
+    otakuSupabase.from('otaku_board_posts').select('id',{count:'exact',head:true}).eq('user_id',id),
+    otakuSupabase.from('otaku_event_records').select('id',{count:'exact',head:true}).eq('user_id',id).eq('visibility','public').eq('hidden',false),
+    profile.show_attendance?otakuSupabase.from('otaku_event_attendees').select('event_id',{count:'exact',head:true}).eq('user_id',id):Promise.resolve({count:null,error:null})
+  ]);
+  const value=result=>result.error||result.count===null?'—':result.count;
+  stats.innerHTML=`<div>掲示板投稿 <b>${value(results[0])}</b>件　公演後の記録 <b>${value(results[1])}</b>件${profile.show_attendance?`　参戦予定 <b>${value(results[2])}</b>件`:''}</div><div class="muted">公開中の情報をもとにした件数です。</div>`;
+}
 async function loadActivity(profile){
+  loadStats(profile);
   const [postsResult, recordsResult] = await Promise.all([
     otakuSupabase.from('otaku_board_posts').select('id,title,body,category,created_at,event_id,idol_id').eq('user_id',id).order('created_at',{ascending:false}).limit(10),
     otakuSupabase.from('otaku_event_records').select('id,impression,setlist,attendance_note,updated_at,otaku_events(id,title,starts_at,venue)').eq('user_id',id).eq('visibility','public').eq('hidden',false).order('updated_at',{ascending:false}).limit(10)
