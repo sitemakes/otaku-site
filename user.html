@@ -36,7 +36,7 @@ async function loadActivity(profile){
       return `<div class="activity-item"><div class="activity-title">${esc(d.title||categoryLabels[d.category]||'掲示板への投稿')}</div><div class="activity-body">${esc(d.body||'')}</div><div class="activity-meta">${context} · ${new Date(item.date).toLocaleDateString('ja-JP')}</div></div>`;
     }
     const event=d.otaku_events;
-    if(item.kind==='record') return `<div class="activity-item"><div class="activity-title">公演後の記録：${esc(event?.title||'公演')}</div><div class="activity-body">${esc(d.impression||d.setlist||d.attendance_note||'')}</div><div class="activity-meta">${event?.id?`<a href="event.html?id=${event.id}">公演詳細</a> · `:''}${new Date(item.date).toLocaleDateString('ja-JP')}</div></div>`;
+    if(item.kind==='record') return `<div class="activity-item"><div class="activity-title">公演後の記録：${esc(event?.title||'公演')}</div>${d.impression?`<div class="activity-body"><strong>感想</strong><br>${esc(d.impression)}</div>`:''}${d.setlist?`<div class="activity-body"><strong>セットリスト</strong><br>${esc(d.setlist)}</div>`:''}${d.attendance_note?`<div class="activity-body"><strong>参戦メモ</strong><br>${esc(d.attendance_note)}</div>`:''}<div class="activity-meta">${event?.id?`<a href="event.html?id=${event.id}">公演詳細</a> · `:''}${new Date(item.date).toLocaleDateString('ja-JP')}</div></div>`;
     return `<div class="activity-item"><div class="activity-title">参戦予定：${esc(event?.title||'公演')}</div><div class="activity-meta">${event?.starts_at?new Date(event.starts_at).toLocaleString('ja-JP'):''}${event?.venue?` · ${esc(event.venue)}`:''}</div></div>`;
   }).join('');
 }
