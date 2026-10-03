@@ -21,8 +21,10 @@
       const fields=[['🚉 最寄駅',guide.nearest_station],['🚶 アクセス',guide.access_notes],['🔐 ロッカー',guide.lockers],['🚻 トイレ',guide.toilets],['🏪 周辺施設',guide.convenience_store],['📍 待ち合わせ',guide.meeting_spot]];
       for(const [label,value] of fields){if(!value)continue;const title=document.createElement('strong');title.textContent=label;title.style.display='block';title.style.marginTop='10px';const body=document.createElement('div');body.className='muted';body.textContent=value;card.append(title,body)}
       const source=document.createElement('a');source.href=guide.official_url;source.target='_blank';source.rel='noopener noreferrer';source.textContent='会場公式情報を確認 ↗';source.style.color='#dcc5ff';
-      const checked=document.createElement('p');checked.className='notice';checked.textContent=`確認日: ${new Date(guide.source_checked_at).toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}。設備・利用条件は変更される場合があります。`;
-      const board=document.createElement('a');board.href=`board.html?event=${encodeURIComponent(eventId)}&category=venue`;board.textContent=' 利用者の会場情報を見る';board.style.color='#dcc5ff';card.append(source,checked,board);
+      const checkedAt=new Date(guide.source_checked_at);
+      const stale=Date.now()-checkedAt.getTime()>180*24*60*60*1000;
+      const checked=document.createElement('p');checked.className='notice';checked.textContent=`確認日: ${checkedAt.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}。設備・利用条件は変更される場合があります。${stale?' 最新情報は公式サイトでもご確認ください。':''}`;
+      const board=document.createElement('a');board.className='btn secondary';board.href=`board.html?event=${encodeURIComponent(eventId)}&category=venue`;board.textContent='会場掲示板を見る・体験談を書く';board.style.display='inline-block';board.style.marginTop='8px';card.append(source,checked,board);
     }
     hero.after(card);
   };
