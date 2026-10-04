@@ -51,7 +51,7 @@
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
-      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
+      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles!otaku_companion_posts_user_id_fkey(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
     const e=eventRes.data,posts=postRes.data||[],postLoadFailed=Boolean(postRes.error);
     if(eventRes.error||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return}
