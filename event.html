@@ -51,9 +51,9 @@
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
-      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles(display_name,username,same_oshi_policy),otaku_companion_matches!otaku_companion_matches_post_id_fkey(conversation_id,matched_user_id)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
+      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
-    const e=eventRes.data,posts=postRes.data||[];
+    const e=eventRes.data,posts=postRes.data||[],postLoadFailed=Boolean(postRes.error);
     if(eventRes.error||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return}
     eventData=e; document.title=e.title+' | OTAKU LIVE';
     const metaTitle=e.title+' | OTAKU LIVE',metaDescription=`${e.title}の開催日時、会場、同行募集、掲示板を確認できます。`;
@@ -70,20 +70,31 @@
       (favs||[]).forEach(f=>{if(!favoriteMap[f.user_id]) favoriteMap[f.user_id]=f});
     }
 
+    if(user&&posts.length){
+      const postIds=posts.map(p=>p.id);
+      const {data:matches}=await otakuSupabase.from('otaku_companion_matches').select('post_id,conversation_id,matched_user_id').in('post_id',postIds);
+      const matchesByPost=new Map();
+      (matches||[]).forEach(match=>{
+        const list=matchesByPost.get(match.post_id)||[];
+        list.push(match);matchesByPost.set(match.post_id,list);
+      });
+      posts.forEach(post=>{post.otaku_companion_matches=matchesByPost.get(post.id)||[]});
+    }
+
     if(user){const {data:a}=await otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle();isAttending=!!a}
-    render(countRes.count||0,posts);
+    render(countRes.count||0,posts,postLoadFailed);
   }
   function sourceHtml(e){
     try {const url=OtakuCatalog.sourceUrl(e.source_url);if(!url)return '';return '<section class="card"><a style="color:#dcc5ff" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">出典・最新の公演情報を確認 ↗</a><p class="notice">確認日: '+(e.source_checked_at?esc(fmt(e.source_checked_at)):'未確認')+' · 開催変更は出典をご確認ください。</p></section>'}catch{return ''}
   }
-  function render(attendeeCount,posts){
+  function render(attendeeCount,posts,postLoadFailed=false){
     const openPosts=posts.filter(p=>p.status==='open'&&(!p.deadline_at||new Date(p.deadline_at)>new Date()));
     root.innerHTML=`
       <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 募集中 ${openPosts.length}件</span></div></section>
       <section id="eventChecklist" class="card"></section>
-      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${posts.length?posts.map(p=>{
+      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
         const fav=favoriteMap[p.user_id];
         const idol=fav?.otaku_idols;
