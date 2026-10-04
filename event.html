@@ -35,6 +35,7 @@
 <script src="venue-guide.js"></script>
 <script src="event-records.js"></script>
 <script src="companion-filter.js"></script>
+<script src="event-checklist.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false,favoriteMap={};
@@ -81,6 +82,7 @@
       <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 募集中 ${openPosts.length}件</span></div></section>
+      <section id="eventChecklist" class="card"></section>
       <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
         const fav=favoriteMap[p.user_id];
@@ -94,6 +96,7 @@
     attendBtn.onclick=toggleAttendance;
     companionBtn.onclick=()=>{if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}location.href=`companion.html?event=${encodeURIComponent(id)}`};
     shareBtn.onclick=shareEvent;calendarBtn.onclick=()=>OtakuCalendar.open(eventData);
+    OtakuChecklist.mount({eventId:eventData.id,startsAt:eventData.starts_at,user});
     document.querySelectorAll('.msgbtn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>openConversation(btn.dataset.post,btn.dataset.owner,btn)));
     document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
     document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
