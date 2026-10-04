@@ -51,7 +51,7 @@
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
-      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,created_at,closed_at,otaku_profiles(display_name,username,same_oshi_policy),otaku_companion_matches!otaku_companion_matches_post_id_fkey(conversation_id,matched_user_id)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
+      otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles(display_name,username,same_oshi_policy),otaku_companion_matches!otaku_companion_matches_post_id_fkey(conversation_id,matched_user_id)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
     const e=eventRes.data,posts=postRes.data||[];
     if(eventRes.error||!e){root.innerHTML='<div class="error">公演情報の取得に失敗しました。</div>';return}
@@ -77,7 +77,7 @@
     try {const url=OtakuCatalog.sourceUrl(e.source_url);if(!url)return '';return '<section class="card"><a style="color:#dcc5ff" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">出典・最新の公演情報を確認 ↗</a><p class="notice">確認日: '+(e.source_checked_at?esc(fmt(e.source_checked_at)):'未確認')+' · 開催変更は出典をご確認ください。</p></section>'}catch{return ''}
   }
   function render(attendeeCount,posts){
-    const openPosts=posts.filter(p=>p.status==='open');
+    const openPosts=posts.filter(p=>p.status==='open'&&(!p.deadline_at||new Date(p.deadline_at)>new Date()));
     root.innerHTML=`
       <section class="hero"><div class="notice">${eventData.is_demo?"DEMO公演（動作確認用）":"実在公演 · 日本時間"}</div><h1>${esc(eventData.title)}</h1><div class="meta">${fmt(eventData.starts_at)}<br>${esc(eventData.venue)}<br>${esc(eventData.prefecture||'')} ${esc(eventData.city||'')}</div></section>
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
@@ -89,9 +89,11 @@
         const idol=fav?.otaku_idols;
         const same=sameOshiMeta(p.otaku_profiles?.same_oshi_policy);
         const oshiHtml=idol?`<span class="smallchip oshi">♥ ${esc(idol.otaku_idol_groups?.name||'')} / ${esc(idol.name||'')}</span>`:'';
-        const closed=p.status==='closed',matched=Array.isArray(p.otaku_companion_matches)?p.otaku_companion_matches.length>0:Boolean(p.otaku_companion_matches);
-        const state=matched?'同行成立':closed?'募集終了':'';
-        return `<div class="post"><div class="who">${esc(p.otaku_profiles?.display_name||p.otaku_profiles?.username||'ユーザー')}${state?`<span class="smallchip">${state}</span>`:''}</div><div class="postmeta">${oshiHtml}<span class="smallchip ${same.cls}">${same.label}</span><span class="smallchip">${p.type==='have_companion_ticket'?'同行枠あり':'一緒に行く人を探す'}</span></div><div class="postbody">${esc(p.body)}</div><div class="postactions">${closed?'':`<button class="msgbtn" data-post="${p.id}" data-owner="${p.user_id}" ${own?'disabled':''}>${own?'自分の募集':'メッセージを送る'}</button>`}<div class="safety-links">${own&&!closed?`<button class="safety-btn" data-close="${p.id}">募集を終了</button>`:!own&&!closed?`<button class="safety-btn" data-report="${p.user_id}" data-context="${p.id}">通報</button><button class="safety-btn" data-block="${p.user_id}">ブロック</button>`:''}</div></div></div>`
+        const closed=p.status==='closed',expired=p.status==='open'&&p.deadline_at&&new Date(p.deadline_at)<=new Date(),matched=Array.isArray(p.otaku_companion_matches)?p.otaku_companion_matches.length>0:Boolean(p.otaku_companion_matches);
+        const state=matched?'同行成立':closed?'募集終了':expired?'募集締切':'';
+        const deadlineHtml=p.deadline_at&&!closed&&!matched?`<div class="notice">募集締切: ${esc(fmt(p.deadline_at))}</div>`:'';
+        const unavailable=closed||expired;
+        return `<div class="post"><div class="who">${esc(p.otaku_profiles?.display_name||p.otaku_profiles?.username||'ユーザー')}${state?`<span class="smallchip">${state}</span>`:''}</div><div class="postmeta">${oshiHtml}<span class="smallchip ${same.cls}">${same.label}</span><span class="smallchip">${p.type==='have_companion_ticket'?'同行枠あり':'一緒に行く人を探す'}</span></div>${deadlineHtml}<div class="postbody">${esc(p.body)}</div><div class="postactions">${unavailable?'':`<button class="msgbtn" data-post="${p.id}" data-owner="${p.user_id}" ${own?'disabled':''}>${own?'自分の募集':'メッセージを送る'}</button>`}<div class="safety-links">${own&&!unavailable?`<button class="safety-btn" data-close="${p.id}">募集を終了</button>`:!own&&!unavailable?`<button class="safety-btn" data-report="${p.user_id}" data-context="${p.id}">通報</button><button class="safety-btn" data-block="${p.user_id}">ブロック</button>`:''}</div></div></div>`
       }).join(''):'<div class="muted">まだ募集はありません。</div>'}</section>`;
     attendBtn.onclick=toggleAttendance;
     companionBtn.onclick=()=>{if(!user){location.href=otakuLoginUrl(location.href);return}if(!profile){location.href=otakuProfileUrl(location.href);return}location.href=`companion.html?event=${encodeURIComponent(id)}`};
