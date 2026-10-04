@@ -43,15 +43,16 @@
       if(mode==='login'){
         const {error}=await otakuSupabase.auth.signInWithPassword({email,password});
         if(error){show('ログインできませんでした。メールアドレス・パスワードを確認してください。');submit.disabled=false;return}
-        location.href=otakuNextUrl('profile.html');
+        await redirectAfterLogin();
       }else{
         const {data,error}=await otakuSupabase.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/login.html'}});
         if(error){show('登録できませんでした。別のメールアドレスかパスワードを試してください。');submit.disabled=false;return}
-        if(data.session){location.href=otakuNextUrl('profile.html');return}
+        if(data.session){await redirectAfterLogin();return}
         show('確認メールを送信しました。メール内のリンクを開いた後、ログインしてください。');submit.disabled=false;
       }
     };
-    (async()=>{const u=await otakuGetUser();if(u) location.href=otakuNextUrl('profile.html')})();
+    async function redirectAfterLogin(){const next=otakuNextUrl('index.html'),u=await otakuGetUser();if(!u)return;const profile=await otakuGetProfile(u.id);location.href=profile?next:`onboarding.html?next=${encodeURIComponent(next)}`}
+    (async()=>{const u=await otakuGetUser();if(u) await redirectAfterLogin()})();
   </script>
 </body>
 </html>
