@@ -104,7 +104,7 @@
   }
   function shareEvent(){
     const shareUrl=new URL(`api/event-share?id=${encodeURIComponent(id)}`,location.origin).href;
-    const shareData={title:eventData.title+' | OTAKU LIVE',text:`${eventData.title}の公演情報`,url:shareUrl};
+    const shareData={title:eventData.title+' | OTAKU LIVE',text:`${eventData.title}の公演情報です。日時・会場・同行募集を確認できます。`,url:shareUrl};
     if(navigator.share){navigator.share(shareData).catch(()=>{});return}
     navigator.clipboard?.writeText(shareUrl).then(()=>alert('共有リンクをコピーしました。')).catch(()=>window.prompt('共有リンクをコピーしてください',shareUrl));
   }
