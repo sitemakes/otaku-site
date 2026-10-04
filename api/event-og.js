@@ -1,7 +1,7 @@
 'use strict';
 
 const SUPABASE_URL='https://pfyvsweuvdnpmvabfflh.supabase.co';
-const SUPABASE_KEY='sb_publishable_FJ9hNx9T4-sNV6Ypv94vJA_cC5TxUp';
+const SUPABASE_KEY='sb_publishable_FJ9hNx9T4-sNV6Ypv94vJA_cCq5TxUp';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 const date=value=>value?new Date(value).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short',timeZone:'Asia/Tokyo'}):'';
 
