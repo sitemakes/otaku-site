@@ -54,5 +54,6 @@
     async function redirectAfterLogin(){const next=otakuNextUrl('index.html'),u=await otakuGetUser();if(!u)return;const profile=await otakuGetProfile(u.id);location.href=profile?next:`onboarding.html?next=${encodeURIComponent(next)}`}
     (async()=>{const u=await otakuGetUser();if(u) await redirectAfterLogin()})();
   </script>
+  <script src="legal-links.js"></script>
 </body>
 </html>

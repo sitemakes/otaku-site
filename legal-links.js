@@ -1,0 +1,2 @@
+'use strict';
+(()=>{if(document.querySelector('.legal-footer'))return;const footer=document.createElement('footer');footer.className='legal-footer';footer.innerHTML='<a href="terms.html">利用規約</a><a href="privacy.html">プライバシー</a><a href="contact.html">お問い合わせ</a><span class="legal-draft-label">公開準備中：運営者情報と窓口は未確定です</span>';document.body.append(footer);if(!document.querySelector('link[href="legal.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href='legal.css';document.head.append(link)}})();
