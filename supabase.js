@@ -13,6 +13,27 @@ const otakuSupabase = window.supabase.createClient(
   }
 );
 
+// Report unexpected browser failures without sending form values or account data.
+(function installClientErrorReporting() {
+  if (window.__otakuClientErrorReportingInstalled) return;
+  window.__otakuClientErrorReportingInstalled = true;
+  const sent = new Set();
+  const send = (type, error) => {
+    const message = String(error?.message || error || 'Unknown client error').slice(0, 500);
+    const stack = String(error?.stack || '').slice(0, 2000);
+    const key = `${type}:${message}:${location.pathname}`;
+    if (sent.has(key)) return;
+    sent.add(key);
+    if (sent.size > 20) sent.delete(sent.values().next().value);
+    const body = JSON.stringify({ type, message, stack, page: `${location.pathname}${location.search}` });
+    try {
+      fetch('/api/client-error', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => {});
+    } catch (_) {}
+  };
+  window.addEventListener('error', event => send('window.error', event.error || event.message));
+  window.addEventListener('unhandledrejection', event => send('unhandledrejection', event.reason));
+})();
+
 async function otakuGetUser() {
   const { data, error } = await otakuSupabase.auth.getUser();
   if (error) return null;
