@@ -30,7 +30,6 @@
     <section id="userDiscovery" class="user-discovery" hidden><h2>ユーザーを探す</h2><p class="meta">表示名・ユーザーID・地域から、気になるユーザーを探せます。</p><input id="userDiscoverySearch" type="search" placeholder="ユーザー名・地域で検索" aria-label="ユーザー検索"><div id="userDiscoveryList" class="user-list"></div></section>
     <section class="board-links"><h2>掲示板</h2><div class="board-grid"><a href="board.html?category=general">雑談・質問</a><a href="board.html?category=fan">ファン交流</a><a href="board.html?category=goods">グッズ</a><a href="board.html?category=venue">会場・アクセス</a></div></section>
   </main>
-  <nav class="bottom"><div class="inner"><a class="nav" href="index.html"><b>⌂</b>ホーム</a><a class="nav" href="goods.html"><b>↔</b>グッズ</a><a class="nav" href="boards.html"><b>🗨</b>掲示板</a><a class="nav" href="dm.html"><b>💬</b>DM</a><a class="nav" href="profile.html"><b>👤</b>マイページ</a></div></nav>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase.js"></script><script src="saved-search.js"></script><script src="follow-feed.js"></script><script src="user-discovery.js"></script><script src="event-reminders.js"></script>
   <script>
     let all=[], preferenceGroups=new Set(), preferencePrefecture='', favoriteEvents=new Set(), attendedGroups=new Set(); const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -46,5 +45,6 @@
     (async()=>{await loadPreferences();await load()})();
   </script>
   <script src="legal-links.js"></script>
+<script src="bottom-nav.js"></script>
 </body>
 </html>

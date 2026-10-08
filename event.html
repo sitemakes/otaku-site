@@ -112,7 +112,7 @@
     shareBtn.onclick=shareEvent;calendarBtn.onclick=()=>OtakuCalendar.open(eventData);
     OtakuChecklist.mount({eventId:eventData.id,startsAt:eventData.starts_at,user});
     document.querySelectorAll('.msgbtn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>openConversation(btn.dataset.post,btn.dataset.owner,btn)));
-    if(!jumpedToHash){jumpedToHash=true;const target={'#attend':'attendBtn','#companions':'companions'}[location.hash];if(target)document.getElementById(target)?.scrollIntoView({block:'center'})}
+    if(!jumpedToHash){jumpedToHash=true;const target={'#attend':'attendBtn','#companions':'companions'}[location.hash];if(target){/* the page re-renders and sections above load late: follow the target briefly unless the user scrolls */const go=()=>document.getElementById(target)?.scrollIntoView({block:'center'}),ro=new ResizeObserver(go),stop=()=>ro.disconnect();ro.observe(document.body);setTimeout(stop,2500);['wheel','touchstart','keydown'].forEach(t=>addEventListener(t,stop,{once:true,passive:true}))}}
     document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
     document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
     document.querySelectorAll('[data-block]').forEach(btn=>btn.onclick=()=>OtakuSafety.block(btn.dataset.block,load));
