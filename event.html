@@ -94,7 +94,7 @@
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 募集中 ${openPosts.length}件</span></div></section>
       <section id="eventChecklist" class="card"></section>
-      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
+      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${!user?`<div class="muted">同行募集を見るには<a href="${otakuLoginUrl(location.href)}">ログイン</a>してください。</div>`:postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
         const fav=favoriteMap[p.user_id];
         const idol=fav?.otaku_idols;
