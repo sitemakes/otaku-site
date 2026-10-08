@@ -115,5 +115,6 @@
   (async()=>{if(!await requireUser())return;const {data:admin}=await otakuSupabase.rpc('otaku_is_catalog_admin');document.getElementById('adminLink').hidden=!admin;document.getElementById('reportAdminLink').hidden=!admin;profile=await otakuGetProfile(user.id);fill(profile);await Promise.all([loadEvents(),loadIdols(),loadFavorites(),loadNotificationPreferences(),loadTrustSummary()])})();
 </script>
 <script src="event-reminders.js"></script><script src="legal-links.js"></script>
+<script src="bottom-nav.js"></script>
 </body>
 </html>

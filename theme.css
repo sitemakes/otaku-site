@@ -17,6 +17,25 @@ h1,h2{font-weight:900;letter-spacing:-.01em}
 .badge.hot{background:#2a1020;color:#ff8cc2}
 .search input:focus{border-color:#ff4fa3}
 
+/* Shared components */
+.card{background:#15151d;border:1px solid #262632;border-radius:20px}
+.btn,.primary,.secondary,.send,.follow,.msgbtn{border-radius:12px}
+.btn{min-height:46px}
+.btn.primary:not(.on),button.primary,.send,.tab.active,.tabs button.active{background:var(--accent);color:#fff}
+.secondary,.btn.secondary{background:transparent;border:1px solid #3a3a48;color:var(--text)}
+.secondary:hover,.btn.secondary:hover{border-color:#ff4fa3}
+.back{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--accent-text);font-weight:700;text-decoration:none}
+.chip,.smallchip,.badge{border-radius:999px}
+.field input,.field select,.field textarea{background:#16161f;border-color:#262632}
+:focus-visible{outline:2px solid #ff4fa3;outline-offset:2px}
+
+/* Shared bottom navigation (bottom-nav.js) */
+body.has-bottom-nav{padding-bottom:84px}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(15,15,21,.96);backdrop-filter:blur(14px);border-top:1px solid #22222c}
+.bottom-nav-inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 6px calc(8px + env(safe-area-inset-bottom))}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;color:#a9a7b8;text-decoration:none;font-size:11px}
+.bottom-nav a[aria-current="page"]{color:#ff4fa3;font-weight:700}
+
 /* Top page layout */
 .hero .eyebrow{margin:0 0 10px;font-family:var(--font-num);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--accent-text)}
 .hero h1{font-size:32px;line-height:1.28;word-break:keep-all;overflow-wrap:anywhere}
