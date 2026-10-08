@@ -34,10 +34,27 @@ const otakuSupabase = window.supabase.createClient(
   window.addEventListener('unhandledrejection', event => send('unhandledrejection', event.reason));
 })();
 
-async function otakuGetUser() {
-  const { data, error } = await otakuSupabase.auth.getUser();
-  if (error) return null;
-  return data.user ?? null;
+// Share one server-verified user lookup per page. Each page loads several
+// modules that all ask for the user, and auth.getUser() calls run one at a
+// time, so separate lookups queue up and delay rendering. Only a signed-in
+// result is kept; it is dropped when the session changes.
+let otakuUserPromise = null;
+otakuSupabase.auth.onAuthStateChange(event => {
+  if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') otakuUserPromise = null;
+});
+
+function otakuGetUser() {
+  if (!otakuUserPromise) {
+    const pending = otakuSupabase.auth.getUser()
+      .then(({ data, error }) => (error ? null : data.user ?? null))
+      .catch(() => null)
+      .then(user => {
+        if (!user && otakuUserPromise === pending) otakuUserPromise = null;
+        return user;
+      });
+    otakuUserPromise = pending;
+  }
+  return otakuUserPromise;
 }
 
 async function otakuGetProfile(userId) {

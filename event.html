@@ -47,7 +47,7 @@
   }
   async function load(){
     if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return}
-    user=await otakuGetUser(); if(user) profile=await otakuGetProfile(user.id);
+    const userReady=otakuGetUser().then(async u=>{user=u;if(u) profile=await otakuGetProfile(u.id);return u});
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
@@ -65,23 +65,24 @@
 
     favoriteMap={};
     const ids=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
-    if(ids.length){
-      const {data:favs}=await otakuSupabase.from('otaku_user_favorites').select('user_id,is_primary,created_at,otaku_idols(name,otaku_idol_groups(name))').in('user_id',ids).order('is_primary',{ascending:false}).order('created_at',{ascending:true});
-      (favs||[]).forEach(f=>{if(!favoriteMap[f.user_id]) favoriteMap[f.user_id]=f});
-    }
+    await userReady;
+    const [favRes,matchRes,attendRes]=await Promise.all([
+      ids.length?otakuSupabase.from('otaku_user_favorites').select('user_id,is_primary,created_at,otaku_idols(name,otaku_idol_groups(name))').in('user_id',ids).order('is_primary',{ascending:false}).order('created_at',{ascending:true}):null,
+      user&&posts.length?otakuSupabase.from('otaku_companion_matches').select('post_id,conversation_id,matched_user_id').in('post_id',posts.map(p=>p.id)):null,
+      user?otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle():null
+    ]);
+    (favRes?.data||[]).forEach(f=>{if(!favoriteMap[f.user_id]) favoriteMap[f.user_id]=f});
 
-    if(user&&posts.length){
-      const postIds=posts.map(p=>p.id);
-      const {data:matches}=await otakuSupabase.from('otaku_companion_matches').select('post_id,conversation_id,matched_user_id').in('post_id',postIds);
+    if(matchRes){
       const matchesByPost=new Map();
-      (matches||[]).forEach(match=>{
+      (matchRes.data||[]).forEach(match=>{
         const list=matchesByPost.get(match.post_id)||[];
         list.push(match);matchesByPost.set(match.post_id,list);
       });
       posts.forEach(post=>{post.otaku_companion_matches=matchesByPost.get(post.id)||[]});
     }
 
-    if(user){const {data:a}=await otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle();isAttending=!!a}
+    if(attendRes) isAttending=!!attendRes.data;
     render(countRes.count||0,posts,postLoadFailed);
   }
   function sourceHtml(e){
@@ -94,7 +95,7 @@
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 募集中 ${openPosts.length}件</span></div></section>
       <section id="eventChecklist" class="card"></section>
-      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
+      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${!user?`<div class="muted">同行募集を見るには<a href="${otakuLoginUrl(location.href)}">ログイン</a>してください。</div>`:postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
         const fav=favoriteMap[p.user_id];
         const idol=fav?.otaku_idols;
