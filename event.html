@@ -47,7 +47,7 @@
   }
   async function load(){
     if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return}
-    user=await otakuGetUser(); if(user) profile=await otakuGetProfile(user.id);
+    const userReady=otakuGetUser().then(async u=>{user=u;if(u) profile=await otakuGetProfile(u.id);return u});
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
@@ -65,23 +65,24 @@
 
     favoriteMap={};
     const ids=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
-    if(ids.length){
-      const {data:favs}=await otakuSupabase.from('otaku_user_favorites').select('user_id,is_primary,created_at,otaku_idols(name,otaku_idol_groups(name))').in('user_id',ids).order('is_primary',{ascending:false}).order('created_at',{ascending:true});
-      (favs||[]).forEach(f=>{if(!favoriteMap[f.user_id]) favoriteMap[f.user_id]=f});
-    }
+    await userReady;
+    const [favRes,matchRes,attendRes]=await Promise.all([
+      ids.length?otakuSupabase.from('otaku_user_favorites').select('user_id,is_primary,created_at,otaku_idols(name,otaku_idol_groups(name))').in('user_id',ids).order('is_primary',{ascending:false}).order('created_at',{ascending:true}):null,
+      user&&posts.length?otakuSupabase.from('otaku_companion_matches').select('post_id,conversation_id,matched_user_id').in('post_id',posts.map(p=>p.id)):null,
+      user?otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle():null
+    ]);
+    (favRes?.data||[]).forEach(f=>{if(!favoriteMap[f.user_id]) favoriteMap[f.user_id]=f});
 
-    if(user&&posts.length){
-      const postIds=posts.map(p=>p.id);
-      const {data:matches}=await otakuSupabase.from('otaku_companion_matches').select('post_id,conversation_id,matched_user_id').in('post_id',postIds);
+    if(matchRes){
       const matchesByPost=new Map();
-      (matches||[]).forEach(match=>{
+      (matchRes.data||[]).forEach(match=>{
         const list=matchesByPost.get(match.post_id)||[];
         list.push(match);matchesByPost.set(match.post_id,list);
       });
       posts.forEach(post=>{post.otaku_companion_matches=matchesByPost.get(post.id)||[]});
     }
 
-    if(user){const {data:a}=await otakuSupabase.from('otaku_event_attendees').select('event_id').eq('event_id',id).eq('user_id',user.id).maybeSingle();isAttending=!!a}
+    if(attendRes) isAttending=!!attendRes.data;
     render(countRes.count||0,posts,postLoadFailed);
   }
   function sourceHtml(e){
