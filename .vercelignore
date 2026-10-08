@@ -3,3 +3,6 @@ tests/
 README.md
 CLAUDE.md
 docs/
+.claude/
+.github/
+scripts/
