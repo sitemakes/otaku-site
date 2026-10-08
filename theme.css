@@ -16,3 +16,31 @@ h1,h2{font-weight:900;letter-spacing:-.01em}
 .datebox .d{font-family:var(--font-num);font-weight:700}
 .badge.hot{background:#2a1020;color:#ff8cc2}
 .search input:focus{border-color:#ff4fa3}
+
+/* Top page layout */
+.hero .eyebrow{margin:0 0 10px;font-family:var(--font-num);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--accent-text)}
+.hero h1{font-size:32px;line-height:1.28;word-break:keep-all;overflow-wrap:anywhere}
+.search{margin:16px 0 8px}
+.search input{border-radius:14px;background:#16161f}
+
+.event-card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.event-card .event{border:0;border-radius:0;background:transparent;padding:16px 16px 12px}
+.event-card .event:hover{transform:none;background:var(--card2)}
+.event-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 16px 16px}
+.act{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:12px;border:1px solid #3a3a48;color:var(--text);text-decoration:none;font-size:14px;font-weight:700}
+.act.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.act:hover{border-color:#ff4fa3}
+
+.feature-link{display:flex;align-items:center;gap:14px;margin:20px 0;padding:16px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--text);text-decoration:none}
+.feature-link:hover{background:var(--card2)}
+.feature-icon{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:#221a2a;color:#ff8cc2;display:grid;place-items:center}
+.feature-text{flex:1;min-width:0;display:grid;gap:4px}
+.feature-text b{display:flex;align-items:center;gap:8px;font-size:15px}
+.feature-text b .badge{font-size:11px;padding:3px 8px}
+.feature-text>span{font-size:13px;color:var(--muted)}
+.feature-link .chevron{color:var(--muted);flex-shrink:0}
+
+.board-links{margin:20px 0}
+.board-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.board-grid a{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);color:var(--text);text-decoration:none;font-size:14px;font-weight:700}
+.board-grid a:hover{background:var(--card2)}

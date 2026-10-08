@@ -38,7 +38,7 @@
 <script src="event-checklist.js"></script>
 <script>
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false,favoriteMap={};
+  const id=new URLSearchParams(location.search).get('id'); let eventData=null,user=null,profile=null,isAttending=false,favoriteMap={},jumpedToHash=false;
   function fmt(iso){const d=new Date(iso);return d.toLocaleString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})}
   function sameOshiMeta(policy){
     if(policy==='ok') return {label:'同担 ◎',cls:'same-ok'};
@@ -95,7 +95,7 @@
       ${sourceHtml(eventData)}<section class="card"><h2>公演掲示板</h2><p class="muted">この公演について情報交換できます。</p><a class="btn secondary" href="board.html?event=${encodeURIComponent(eventData.id)}">掲示板を見る・書き込む</a></section><div class="actions"><button id="attendBtn" class="btn primary ${isAttending?'on':''}">${isAttending?'参戦予定 ✓':'参戦する'}</button><button id="companionBtn" class="btn secondary">同行者を募集</button><button id="shareBtn" class="btn secondary share-btn" type="button">共有する</button><button id="calendarBtn" class="btn secondary calendar-btn" type="button">カレンダーに追加</button></div>
       <section class="card"><h2>この公演</h2><div class="stat"><span class="chip">👥 参戦予定 ${attendeeCount}人</span><span class="chip">🤝 募集中 ${openPosts.length}件</span></div></section>
       <section id="eventChecklist" class="card"></section>
-      <section class="card"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${!user?`<div class="muted">同行募集を見るには<a href="${otakuLoginUrl(location.href)}">ログイン</a>してください。</div>`:postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
+      <section class="card" id="companions"><h2>同行者募集</h2><div id="companionFilters" class="muted"></div>${!user?`<div class="muted">同行募集を見るには<a href="${otakuLoginUrl(location.href)}">ログイン</a>してください。</div>`:postLoadFailed?'<div class="error">同行募集の取得に失敗しました。再読み込みしてください。</div>':posts.length?posts.map(p=>{
         const own=user&&p.user_id===user.id;
         const fav=favoriteMap[p.user_id];
         const idol=fav?.otaku_idols;
@@ -112,6 +112,7 @@
     shareBtn.onclick=shareEvent;calendarBtn.onclick=()=>OtakuCalendar.open(eventData);
     OtakuChecklist.mount({eventId:eventData.id,startsAt:eventData.starts_at,user});
     document.querySelectorAll('.msgbtn:not(:disabled)').forEach(btn=>btn.addEventListener('click',()=>openConversation(btn.dataset.post,btn.dataset.owner,btn)));
+    if(!jumpedToHash){jumpedToHash=true;const target={'#attend':'attendBtn','#companions':'companions'}[location.hash];if(target)document.getElementById(target)?.scrollIntoView({block:'center'})}
     document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
     document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
     document.querySelectorAll('[data-block]').forEach(btn=>btn.onclick=()=>OtakuSafety.block(btn.dataset.block,load));
