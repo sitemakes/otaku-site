@@ -52,10 +52,11 @@
     footer.innerHTML = `<a href="terms.html">利用規約</a><a href="privacy.html">プライバシー</a><a href="contact.html">お問い合わせ</a><span class="legal-draft-label">正式公開：施行日 ${effectiveDate}</span>`;
     document.body.append(footer);
   }
-  if (!document.querySelector('link[href="legal.css"]')) {
+  // Only the footer styles: legal.css is page styling for the legal pages and would leak into others.
+  if (!document.querySelector('link[href="legal-footer.css"]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'legal.css';
+    link.href = 'legal-footer.css';
     document.head.append(link);
   }
 })();
