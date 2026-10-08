@@ -57,7 +57,7 @@
   function ensureEventStatusFields() {
     if ($('eventStatusField')) return;
     const wrap = document.createElement('div'); wrap.id = 'eventStatusField';
-    wrap.innerHTML = '<label for="event_status">公演の状態</label><select id="event_status"><option value="scheduled">予定どおり</option><option value="changed">内容変更</option><option value="postponed">延期</option><option value="cancelled">中止</option></select><label for="status_note">変更内容・利用者向け案内（状態変更時は必須）</label><textarea id="status_note" maxlength="1000" rows="4" style="width:100%;font:inherit;padding:12px;border:1px solid #45404f;border-radius:10px;background:#101018;color:inherit"></textarea>';
+    wrap.innerHTML = '<label for="event_status">公演の状態</label><select id="event_status"><option value="scheduled">予定どおり</option><option value="changed">内容変更</option><option value="postponed">延期</option><option value="cancelled">中止</option></select><label for="status_note">変更内容・利用者向け案内（状態変更時は必須）</label><textarea id="status_note" maxlength="1000" rows="4" style="width:100%;font:inherit;padding:12px;border:1px solid #3a3740;border-radius:10px;background:#101018;color:inherit"></textarea>';
     $('eventFields').append(wrap);
   }
   async function change() {

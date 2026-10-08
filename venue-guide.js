@@ -20,7 +20,7 @@
     }else{
       const fields=[['🚉 最寄駅',guide.nearest_station],['🚶 アクセス',guide.access_notes],['🔐 ロッカー',guide.lockers],['🚻 トイレ',guide.toilets],['🏪 周辺施設',guide.convenience_store],['📍 待ち合わせ',guide.meeting_spot]];
       for(const [label,value] of fields){if(!value)continue;const title=document.createElement('strong');title.textContent=label;title.style.display='block';title.style.marginTop='10px';const body=document.createElement('div');body.className='muted';body.textContent=value;card.append(title,body)}
-      const source=document.createElement('a');source.href=guide.official_url;source.target='_blank';source.rel='noopener noreferrer';source.textContent='会場公式情報を確認 ↗';source.style.color='#dcc5ff';
+      const source=document.createElement('a');source.href=guide.official_url;source.target='_blank';source.rel='noopener noreferrer';source.textContent='会場公式情報を確認 ↗';source.style.color='#ffc7e0';
       const checkedAt=new Date(guide.source_checked_at);
       const stale=Date.now()-checkedAt.getTime()>180*24*60*60*1000;
       const checked=document.createElement('p');checked.className='notice';checked.textContent=`確認日: ${checkedAt.toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})}。設備・利用条件は変更される場合があります。${stale?' 最新情報は公式サイトでもご確認ください。':''}`;

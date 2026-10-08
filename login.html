@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ログイン | OTAKU LIVE</title>
   <style>
-    :root{--bg:#0b0b10;--card:#15151d;--text:#f7f7fb;--muted:#9da0ad;--accent:#8b5cf6;--accent2:#ec4899;--line:#2a2a36}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:520px;margin:0 auto;padding:32px 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:22px}.brand{font-weight:900;letter-spacing:.06em;margin-bottom:20px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}.tab{padding:11px;border-radius:12px;border:1px solid var(--line);background:#20202a;color:#ddd;font-weight:700;cursor:pointer}.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none}.field{margin:12px 0}.field label{display:block;font-size:13px;color:#bbb;margin-bottom:6px}.field input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0f0f15;color:white;font-size:16px}.btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:800;font-size:16px;cursor:pointer;margin-top:8px}.sub{margin-top:12px;color:var(--muted);font-size:13px;line-height:1.6}.msg{margin-top:14px;padding:12px;border-radius:12px;background:#211d2f;color:#d8d2ee;font-size:14px;display:none}.back{display:inline-block;margin-top:16px;color:#aaa;text-decoration:none}
-  </style>
+    :root{--bg:#0a0a0f;--card:#15151d;--text:#f4f2f8;--muted:#a9a7b8;--accent:#d6246f;--accent2:#d6246f;--line:#262632}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:520px;margin:0 auto;padding:32px 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:22px}.brand{font-weight:900;letter-spacing:.06em;margin-bottom:20px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}.tab{padding:11px;border-radius:12px;border:1px solid var(--line);background:#20202a;color:#ddd;font-weight:700;cursor:pointer}.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none}.field{margin:12px 0}.field label{display:block;font-size:13px;color:#bbb;margin-bottom:6px}.field input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0f0f15;color:white;font-size:16px}.btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:800;font-size:16px;cursor:pointer;margin-top:8px}.sub{margin-top:12px;color:var(--muted);font-size:13px;line-height:1.6}.msg{margin-top:14px;padding:12px;border-radius:12px;background:#1d1a22;color:#ead3dd;font-size:14px;display:none}.back{display:inline-block;margin-top:16px;color:#aaa;text-decoration:none}
+  </style><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap"><link rel="stylesheet" href="theme.css">
 </head>
 <body>
   <main class="wrap">
@@ -17,7 +17,7 @@
       <div class="field"><label>メールアドレス</label><input id="email" type="email" autocomplete="email" /></div>
       <div class="field"><label>パスワード</label><input id="password" type="password" autocomplete="current-password" /></div>
       <button id="submit" class="btn">ログイン</button>
-      <button id="forgot" type="button" style="display:block;width:100%;margin-top:14px;border:0;background:transparent;color:#cfc0ef;cursor:pointer">パスワードを忘れた場合</button>
+      <button id="forgot" type="button" style="display:block;width:100%;margin-top:14px;border:0;background:transparent;color:#ffc6de;cursor:pointer">パスワードを忘れた場合</button>
       <div id="msg" class="msg"></div>
       <div class="sub">新規登録では確認メールが届く場合があります。確認後、このページからログインしてください。</div>
     </section>

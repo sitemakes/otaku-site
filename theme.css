@@ -1,0 +1,18 @@
+/* Stage Night theme: shared type and surfaces, loaded after each page's own styles. */
+:root{--accent-text:#ff7ab8;--font-body:"Zen Kaku Gothic New",system-ui,-apple-system,"Segoe UI",sans-serif;--font-num:"Space Grotesk","Zen Kaku Gothic New",system-ui,sans-serif}
+body{font-family:var(--font-body);background:#0a0a0f}
+input,select,textarea,button{font-family:inherit}
+h1,h2{font-weight:900;letter-spacing:-.01em}
+
+.brand{font-family:var(--font-num);font-weight:700;letter-spacing:.08em;display:inline-flex;align-items:center;gap:8px}
+.brand::before{content:"";width:10px;height:10px;border-radius:50%;background:#ff4fa3}
+
+.hero{background:#15151d;border-color:#262632}
+.hero h1{font-weight:900}
+.recommendations{background:#15151d;border-color:#262632}
+
+.datebox{background:#0a0a0f;border-color:#2f2f3c}
+.datebox .m{color:#a9a7b8;letter-spacing:.1em}
+.datebox .d{font-family:var(--font-num);font-weight:700}
+.badge.hot{background:#2a1020;color:#ff8cc2}
+.search input:focus{border-color:#ff4fa3}
