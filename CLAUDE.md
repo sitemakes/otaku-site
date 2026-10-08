@@ -43,7 +43,9 @@ AI・開発者がこのリポジトリを引き継ぐための要点。詳細な
 node --test tests/catalog.test.cjs                      # 単体テスト（Node 18+、依存パッケージ無し）
 for f in *.js api/*.js; do node --check "$f"; done      # 構文チェック
 npx serve .                                             # ローカル表示（任意の静的サーバーで可）
+bash scripts/check.sh                                   # 上の2つ＋supabase-js の版ズレ・設定値の不一致・秘密情報混入をまとめて確認
 ```
+- **作業の完了条件は `bash scripts/check.sh` が「すべてOK」になること**（Claude Code では終了時に hooks が自動実行し、NG なら差し戻す）
 - `/api/*` はローカル静的サーバーでは動かない（`vercel dev` が必要）。ローカルでの例外送信の失敗は無視してよい
 - ローカルでも **本番 Supabase に接続する**。ローカル操作で作ったデータは本番データになる
 - DB テスト（`db/test-*.sql`）は Supabase の SQL エディタ等でトランザクション内実行しロールバックする。管理者1名・公開公演などの前提データが必要（各ファイル冒頭・README 参照）
@@ -88,6 +90,12 @@ service_role key・DB パスワードなどの秘密情報は **絶対にリポ�
 - 同じ値が複数箇所にある: Supabase URL/key は `supabase.js`・`api/event-share.js`・`api/event-og.js`、本番ドメインは `api/client-error.js`・`api/event-share.js`・`calendar.js`（ICS の UID）。変更時は全箇所を揃える
 - スマートフォン幅での表示崩れ（タブのはみ出し等）を確認する
 - 共通 Auth・student-chat のテーブル/ポリシーには触れない
+
+## 自動化（Claude Code / GitHub Actions）
+- `.claude/settings.json`: 権限（聞かずに実行 / 確認 / 禁止）と hooks。`.js` 編集直後に構文チェック、終了時に `scripts/check.sh`
+- `.github/workflows/claude.yml`: Issue・PR で `@claude` → 対応してPR作成。Actions からは DB に接続しないので、DB 変更は `db/` に SQL として記録し適用・戻し手順を PR に書く
+- `.github/workflows/claude-monitor.yml`: 毎朝 08:50 JST に本番の応答・内部資料の非公開・外部依存・`scripts/check.sh` を確認し、異常時は `health-check` ラベルの Issue を作る
+- `.claude/` `.github/` `scripts/` は `.vercelignore` で配信対象外
 
 ## 変更してはいけない重要部分
 - `otaku_private` スキーマのガード関数・トリガー（募集終了・ブロック・なりすまし防止）

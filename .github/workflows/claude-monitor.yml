@@ -1,0 +1,93 @@
+# 毎朝、本番サイトの稼働とコードの健全性を確認し、
+# 問題があれば Claude が原因を推定して Issue を立てる（コード・DBは変更しない）
+name: Daily Health Check
+
+on:
+  schedule:
+    - cron: "50 23 * * *" # 毎日 08:50 JST（= 23:50 UTC）
+  workflow_dispatch: {}   # Actions タブから手動実行
+
+concurrency:
+  group: daily-health-check
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    env:
+      PROD_URL: https://otaku-live-mvp.vercel.app
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 30
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # ---- 機械的なチェック（結果を health/ に保存。失敗しても次へ進む） ----
+      - name: Collect health data
+        run: |
+          mkdir -p health
+          {
+            echo "# 本番の応答 (HTTPステータス 応答秒)"
+            for path in / /event.html /companion.html /goods.html /boards.html /login.html /terms.html /privacy.html /theme.css /supabase.js; do
+              r=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" --max-time 20 "${PROD_URL}${path}" || echo "000 timeout")
+              echo "${path} ${r}"
+            done
+            echo
+            echo "# 配信してはいけないファイル（404 が正常）"
+            for path in /CLAUDE.md /README.md /db/launch-safety.sql /docs/launch-priority.md /scripts/check.sh /.claude/settings.json; do
+              r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${PROD_URL}${path}" || echo "000")
+              echo "${path} ${r}"
+            done
+            echo
+            echo "# 外部依存"
+            v=$(grep -oh 'supabase-js@[0-9][0-9.]*' index.html | head -1)
+            r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://cdn.jsdelivr.net/npm/@${v}" || echo "000")
+            echo "jsDelivr @${v} ${r}"
+            sb=$(grep -oh 'https://[a-z0-9]*\.supabase\.co' supabase.js | head -1)
+            r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${sb}/auth/v1/health" || echo "000")
+            echo "Supabase Auth health ${r}（401 も到達できていれば正常）"
+          } > health/uptime.txt 2>&1
+
+          bash scripts/check.sh > health/check.txt 2>&1 && echo OK > health/check.status || echo NG > health/check.status
+          git log --since="3 days ago" --format='%h %ad %s' --date=short > health/recent-commits.txt || true
+
+      - name: Show collected data
+        run: cat health/uptime.txt health/check.status
+
+      # ---- Claude による判定と報告 ----
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 15
+            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh label create:*)"
+          prompt: |
+            あなたは OTAKU LIVE（https://otaku-live-mvp.vercel.app）の運用担当です。
+            ファイル・コード・DBは一切変更しないでください。health/ フォルダの結果を読み、次の基準で判定します。
+
+            重大:
+            - 本番ページが 200 以外、または応答 3 秒以上
+            - 「配信してはいけないファイル」のどれかが 200（内部資料の公開事故）
+            - jsDelivr の supabase-js が 200 以外、または Supabase Auth health に到達できない（000 / 5xx）
+            要対応:
+            - health/check.status が NG（health/check.txt の NG 行から原因箇所を特定し、該当ファイルを読んで説明）
+
+            重大または要対応が1つでもあれば:
+              1. `gh label create health-check --color D93F0B --force` でラベルを用意
+              2. `gh issue list --label health-check --state open` で同じ内容の Issue が既にないか確認
+              3. 無ければ `gh issue create --label health-check` で Issue を作成
+                 タイトル: 「[自動監視] 〈問題の要約〉」
+                 本文（日本語）: 何が起きているか / 確認した数値 / 推定原因（ファイル名と行） / 直近コミットとの関係 / 修正方針。
+                 コードで直せる問題なら、最後に「修正PRが必要なら、この Issue に `@claude 修正PRを作って` とコメントしてください」と書く。
+                 Supabase・Vercel 側の障害が疑われる場合は、そのステータスページを確認するよう書く。
+            すべて正常なら Issue は作らず「異常なし」とだけ出力して終了してください。
