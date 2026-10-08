@@ -23,9 +23,10 @@ AI・開発者がこのリポジトリを引き継ぐための要点。詳細な
 - Serverless: `api/*.js`（Vercel Node Functions、CommonJS）
   - `client-error.js` ブラウザ例外を Vercel ログへ記録（本番オリジン以外は 403）
   - `event-share.js` / `event-og.js` 公演の共有ページ・OGP画像（公開済み公演のみ、5分キャッシュ）
-- Hosting: Vercel プロジェクト `otaku-live-mvp`（Framework Preset: Other、Build/Install コマンド無し、Root はリポジトリ直下）。`.vercelignore` で `db/` `tests/` `README.md` は配信しない
+- Hosting: Vercel プロジェクト `otaku-live-mvp`（Framework Preset: Other、Build/Install コマンド無し、Root はリポジトリ直下）。`.vercelignore` で `db/` `tests/` `docs/` `README.md` `CLAUDE.md` は配信しない
 - Storage: 未使用（プロフィール画像は外部 https URL を保存するだけ）
-- 外部サービス: Supabase、Vercel、jsDelivr、Google/Apple Maps へのリンクのみ
+- Styling: 共通テーマ `theme.css`（"Stage Night" デザイン、全25ページで読み込み）＋各ページ inline `<style>`。法務ページは `legal.css`、安全系ページは `safety-pages.css`
+- 外部サービス: Supabase、Vercel、jsDelivr、Google Fonts（Space Grotesk / Zen Kaku Gothic New）、Google/Apple Maps へのリンクのみ
 
 ## ディレクトリ・コード構成
 - `*.html` 各ページ。ページ固有のスクリプトは同名 `.js` または inline。機能単位の小さな `.js`（`favorites.js`, `map-links.js` など）を複数ページで `<script>` 読み込みして共有する
@@ -68,7 +69,7 @@ Supabase Auth（メール + パスワード、確認メール、パスワード�
 Auth 設定は student-chat と共通のため変更しない。退会（`otaku_withdraw`）は OTAKU LIVE のデータ（関連 DM 含む）のみ削除し Auth ユーザーは残す。
 
 ## 環境変数・秘密情報
-現状 **使用していない**。Supabase URL と publishable key は公開前提の値（権限は RLS で制御）。
+現状 **使用していない**（`api/` にも `process.env` 参照は無いため `.env.example` も置いていない）。Supabase URL と publishable key は公開前提の値（権限は RLS で制御）。
 service_role key・DB パスワードなどの秘密情報は **絶対にリポジトリやフロントに置かない**。必要になったら Vercel の Environment Variables に置き、`api/` からのみ参照する。
 
 ## 運用ルール
@@ -84,7 +85,7 @@ service_role key・DB パスワードなどの秘密情報は **絶対にリポ�
 - `otaku_profiles` を直接 `select('*')` しない（他人の非公開項目を読む経路になり、列権限で 42501 になる）
 - 未ログイン時はエラー表示や無限ローディングではなくログイン導線を出す（`otakuLoginUrl()`）
 - `next` パラメータのリダイレクトは必ず `otakuNextUrl()` を通す（オープンリダイレクト防止）
-- 同じ値が複数箇所にある: Supabase URL/key は `supabase.js`・`api/event-share.js`・`api/event-og.js`、本番ドメインは `api/client-error.js`・`api/event-share.js`。変更時は全箇所を揃える
+- 同じ値が複数箇所にある: Supabase URL/key は `supabase.js`・`api/event-share.js`・`api/event-og.js`、本番ドメインは `api/client-error.js`・`api/event-share.js`・`calendar.js`（ICS の UID）。変更時は全箇所を揃える
 - スマートフォン幅での表示崩れ（タブのはみ出し等）を確認する
 - 共通 Auth・student-chat のテーブル/ポリシーには触れない
 
