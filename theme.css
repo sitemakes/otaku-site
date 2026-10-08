@@ -1,5 +1,5 @@
 /* Stage Night theme: shared type and surfaces, loaded after each page's own styles. */
-:root{--accent-text:#ff7ab8;--font-body:"Zen Kaku Gothic New",system-ui,-apple-system,"Segoe UI",sans-serif;--font-num:"Space Grotesk","Zen Kaku Gothic New",system-ui,sans-serif}
+:root{--accent:#d6246f;--text:#f4f2f8;--muted:#a9a7b8;--accent-text:#ff7ab8;--font-body:"Zen Kaku Gothic New",system-ui,-apple-system,"Segoe UI",sans-serif;--font-num:"Space Grotesk","Zen Kaku Gothic New",system-ui,sans-serif}
 body{font-family:var(--font-body);background:#0a0a0f}
 input,select,textarea,button{font-family:inherit}
 h1,h2{font-weight:900;letter-spacing:-.01em}
@@ -35,6 +35,45 @@ body.has-bottom-nav{padding-bottom:84px}
 .bottom-nav-inner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 6px calc(8px + env(safe-area-inset-bottom))}
 .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;color:#a9a7b8;text-decoration:none;font-size:11px}
 .bottom-nav a[aria-current="page"]{color:#ff4fa3;font-weight:700}
+
+/* Safety actions (募集・DM・チャット) */
+/* "body" outranks the style safety.js injects at runtime */
+body .safety-btn{min-height:36px;border-radius:999px;background:transparent;border:1px solid #3a3a48;color:#d6d4e0;padding:0 14px}
+body .safety-btn:hover:not(:disabled){border-color:#ff4fa3}
+
+/* Chat */
+.headrow{grid-template-columns:44px minmax(0,1fr) 44px}
+.head .back{justify-content:center;width:44px;height:44px;border-radius:12px;color:var(--text)}
+.head .back:hover{background:#16161f}
+.head .title{font-size:16px;font-weight:900}
+#chatNotice{color:var(--muted)!important}
+.messages .mine{background:var(--accent)}
+.messages .theirs{background:#15151d;border-color:#262632}
+.composer .inner{align-items:end;padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.composer textarea{background:#16161f;border-color:#262632;border-radius:14px}
+.composer textarea:focus{border-color:#ff4fa3}
+.composer .send{display:inline-flex;align-items:center;gap:6px;min-height:46px;padding:0 16px;border-radius:12px}
+
+/* Page heading outside cards */
+.page-eyebrow{margin:8px 0 8px;font-family:var(--font-num);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--accent-text)}
+.page-title{margin:0;font-size:28px;line-height:1.3;font-weight:900}
+.page-sub{margin:8px 0 18px;font-size:14px}
+
+/* Admin pages (admin-nav.js adds body.admin-page) */
+.admin-header{display:flex;align-items:center;gap:10px;min-height:56px;margin-bottom:4px}
+.admin-header .brand{color:var(--text);text-decoration:none}
+.admin-label{padding:3px 9px;border-radius:999px;background:#2a1020;color:#ff8cc2;font-size:12px;font-weight:700}
+.admin-exit{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #3a3a48;color:var(--text);text-decoration:none;font-size:14px;font-weight:700}
+.admin-nav{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin-bottom:8px;border-bottom:1px solid #262632}
+.admin-nav a{flex-shrink:0;display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #333342;color:#d6d4e0;text-decoration:none;font-size:13px;white-space:nowrap}
+.admin-nav a[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+body.admin-page h1{font-size:28px;margin:22px 0 8px}
+body.admin-page .card{border-color:#262632;border-radius:20px}
+body.admin-page .record{border-top-color:#262632}
+body.admin-page input:not([type=checkbox]):not([type=radio]),body.admin-page select,body.admin-page textarea{background:#16161f;border:1px solid #262632;border-radius:12px;color:var(--text)}
+body.admin-page button{min-height:44px;border-radius:12px;background:transparent;border:1px solid #3a3a48;color:var(--text);font-weight:700}
+body.admin-page button:hover:not(:disabled){border-color:#ff4fa3}
+body.admin-page button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 
 /* Top page layout */
 .hero .eyebrow{margin:0 0 10px;font-family:var(--font-num);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--accent-text)}

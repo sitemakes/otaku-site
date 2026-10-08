@@ -11,11 +11,11 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="head"><div class="headrow"><a class="back" href="dm.html">‹</a><div><a id="title" class="title" style="display:block;color:inherit;text-decoration:none">DM</a><div id="event" class="event"></div></div><span></span></div></header>
+  <header class="head"><div class="headrow"><a class="back" href="dm.html" aria-label="DM一覧へ戻る"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a><div><a id="title" class="title" style="display:block;color:inherit;text-decoration:none">DM</a><div id="event" class="event"></div></div><span></span></div></header>
   <div id="safetyActions" style="padding:0 16px"><div class="safety-links"><button id="matchUser" class="safety-btn" hidden>この人を同行者に決定</button><button id="reviewUser" class="safety-btn" hidden>同行後の評価</button><button id="reportUser" class="safety-btn" hidden>相手を通報</button><button id="blockUser" class="safety-btn" hidden>相手をブロック</button></div><p id="chatNotice" style="font-size:13px;color:#bbb" role="status"></p></div>
   <main id="messages" class="messages"><div class="empty">メッセージを読み込み中...</div></main>
 </div>
-<div class="composer"><div class="inner"><textarea id="input" maxlength="2000" placeholder="メッセージを入力"></textarea><button id="send" class="send">送信</button></div></div>
+<div class="composer"><div class="inner"><textarea id="input" maxlength="2000" placeholder="メッセージを入力"></textarea><button id="send" class="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>送信</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase.js"></script><script src="safety.js"></script><script src="chat.js"></script>
 <script src="legal-links.js"></script>
 </body>
