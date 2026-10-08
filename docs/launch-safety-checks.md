@@ -19,3 +19,11 @@
 - 認証した管理者による本番ブラウザー操作の通し確認は完了。実データ登録・公開を伴う運用確認は別途必要。
 
 退会は関連DM会話も削除する。共通認証アカウントは削除しない。通報に保存された証拠やバックアップの扱いは運営ルール確定時に明記する。
+
+## プロフィール公開設定のDB強制（2026-10-09）
+- `db/profile-privacy.sql` を migration `otaku_profile_privacy_additive` → フロント反映（PR #2）→ `otaku_profile_privacy_enforce` の順に適用。
+- 修正前は `otaku_profiles`・`otaku_event_attendees`・`otaku_user_favorites` をログイン中の全ユーザーがAPIで全件取得でき、`show_*` の非公開設定を迂回できた。
+- 現在は他人の年代・性別・都道府県・自己紹介・同行条件は列権限で取得不可（42501）。参戦予定・推しは本人または公開設定オンの行のみ。未ログインはプロフィール系をすべて拒否。本番で確認済み。
+- 本人の全項目は `otaku_my_profile()`、参戦人数は `otaku_event_attendee_count()`、他人の公開プロフィールは `otaku_public_profiles` を使う。
+- セキュリティ検査の `security_definer_view`（otaku_public_profiles）と2つの SECURITY DEFINER 関数の警告は意図的。ビューは公開設定でマスクする唯一の経路で、関数は本人の行・件数のみを返し、anon は実行不可。
+- 戻す場合の手順は `db/profile-privacy.sql` 末尾に記載。
