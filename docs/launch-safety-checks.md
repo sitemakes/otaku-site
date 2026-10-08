@@ -27,3 +27,13 @@
 - 本人の全項目は `otaku_my_profile()`、参戦人数は `otaku_event_attendee_count()`、他人の公開プロフィールは `otaku_public_profiles` を使う。
 - セキュリティ検査の `security_definer_view`（otaku_public_profiles）と2つの SECURITY DEFINER 関数の警告は意図的。ビューは公開設定でマスクする唯一の経路で、関数は本人の行・件数のみを返し、anon は実行不可。
 - 戻す場合の手順は `db/profile-privacy.sql` 末尾に記載。
+
+## P0 最終確認（2026-10-09）
+- RLS：public / otaku_private の全テーブルで有効（OTAKU LIVE・student-chat とも）。
+- advisor で SECURITY DEFINER と警告される6関数を確認した。既知の4つに加え、`otaku_set_board_pinned`（管理者判定あり）と `otaku_toggle_board_reaction`（ログイン必須・表示可能な投稿のみ）も、`search_path` が固定され anon からは実行できない。意図どおり。
+- 退会時の削除範囲：ユーザーに関わる列はすべて `otaku_profiles` からの連鎖削除の対象。外部キーが無いのは管理者の監査 `actor_id`（管理者は退会できない）と、`otaku_content_reports.target_id`（対象が複数種類ある列）だけ。
+- 同行評価・一般ユーザーへの通報・退会を `db/test-p0-review-report-withdraw.sql` で検証した（21項目通過、結果は `two-user-e2e.md` に記録）。
+- 未解決：
+  - 通報者または対象者が退会すると通報と証拠が消える（ポリシーでは2年保存）。
+  - 「通知・操作ログ90日」を削除する定期処理が無い（pg_cron のジョブは公演リマインダーだけ）。
+  - Free プランなのでバックアップが無い。
