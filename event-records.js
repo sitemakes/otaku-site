@@ -14,7 +14,7 @@
   const recordColumns='id,user_id,impression,setlist,attendance_note,visibility,hidden,updated_at';
   const initialRecords=await otakuSupabase.from('otaku_event_records').select(recordColumns).eq('event_id',eventId).order('updated_at',{ascending:false}).limit(50);
   records=initialRecords.data||[];
-  const styleInput=element=>{element.style.cssText='width:100%;box-sizing:border-box;margin-top:5px;padding:11px;border-radius:10px;border:1px solid #45404f;background:#101018;color:#f7f7fb;font:inherit'};
+  const styleInput=element=>{element.style.cssText='width:100%;box-sizing:border-box;margin-top:5px;padding:11px;border-radius:10px;border:1px solid #3a3740;background:#101018;color:#f4f2f8;font:inherit'};
   const text=value=>{const node=document.createElement('div');node.className='muted';node.style.whiteSpace='pre-wrap';node.textContent=value;return node};
   const heading=value=>{const node=document.createElement('strong');node.style.display='block';node.style.marginTop='12px';node.textContent=value;return node};
   async function load(){

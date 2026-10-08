@@ -17,7 +17,7 @@
   }
   function open(event){
     document.getElementById('calendarDialog')?.remove();
-    const dialog=document.createElement('dialog');dialog.id='calendarDialog';dialog.style.cssText='color:#f7f7fb;background:#15151d;border:1px solid #5a4a6d;border-radius:18px;width:min(480px,calc(100% - 28px));padding:22px';
+    const dialog=document.createElement('dialog');dialog.id='calendarDialog';dialog.style.cssText='color:#f4f2f8;background:#15151d;border:1px solid #5a3a4c;border-radius:18px;width:min(480px,calc(100% - 28px));padding:22px';
     const title=document.createElement('h2');title.textContent='カレンダーに追加';title.style.marginTop='0';
     const note=document.createElement('p');note.textContent='登録先を選んでください。公演終了時刻が未登録の場合は、開演から2時間後で作成します。';note.style.cssText='color:#b9bbc7;line-height:1.6;font-size:13px';
     const google=document.createElement('a');google.textContent='Googleカレンダー';google.target='_blank';google.rel='noopener noreferrer';google.className='btn primary';google.style.cssText='display:block;text-align:center;text-decoration:none;margin-top:14px';
