@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 30
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -49,8 +49,8 @@ jobs:
             echo
             echo "# 外部依存"
             v=$(grep -oh 'supabase-js@[0-9][0-9.]*' index.html | head -1)
-            r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://cdn.jsdelivr.net/npm/@${v}" || echo "000")
-            echo "jsDelivr @${v} ${r}"
+            r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://cdn.jsdelivr.net/npm/@supabase/${v}" || echo "000")
+            echo "jsDelivr @supabase/${v} ${r}"
             sb=$(grep -oh 'https://[a-z0-9]*\.supabase\.co' supabase.js | head -1)
             r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${sb}/auth/v1/health" || echo "000")
             echo "Supabase Auth health ${r}（401 も到達できていれば正常）"
@@ -69,7 +69,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --max-turns 15
+            --max-turns 30
             --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh label create:*)"
           prompt: |
             あなたは OTAKU LIVE（https://otaku-live-mvp.vercel.app）の運用担当です。
