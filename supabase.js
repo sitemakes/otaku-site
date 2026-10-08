@@ -57,15 +57,13 @@ function otakuGetUser() {
   return otakuUserPromise;
 }
 
+// The signed-in user's own full profile. Other users' private fields are not
+// selectable on otaku_profiles, so the own row comes from a dedicated RPC.
 async function otakuGetProfile(userId) {
   if (!userId) return null;
-  const { data, error } = await otakuSupabase
-    .from('otaku_profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
-  if (error) return null;
-  return data ?? null;
+  const { data, error } = await otakuSupabase.rpc('otaku_my_profile').maybeSingle();
+  if (error || data?.id !== userId) return null;
+  return data;
 }
 
 function otakuNextUrl(defaultPath = 'index.html') {

@@ -25,7 +25,7 @@
   <a class="back" href="index.html">← ホームへ戻る</a>
   <div id="root"><div class="card">公演情報を読み込み中...</div></div>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase.js"></script><script src="catalog.js"></script><script src="safety.js"></script><script src="content-safety.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script><script src="supabase.js"></script><script src="catalog.js"></script><script src="safety.js"></script><script src="content-safety.js"></script>
 <script src="event-status.js"></script>
 <script src="calendar.js"></script>
 <script src="favorites.js"></script>
@@ -50,7 +50,7 @@
     const userReady=otakuGetUser().then(async u=>{user=u;if(u) profile=await otakuGetProfile(u.id);return u});
     const [eventRes,countRes,postRes] = await Promise.all([
       otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
-      otakuSupabase.from('otaku_event_attendees').select('*',{count:'exact',head:true}).eq('event_id',id),
+      otakuSupabase.rpc('otaku_event_attendee_count',{target_event:id}),
       otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles!otaku_companion_posts_user_id_fkey(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
     const e=eventRes.data,posts=postRes.data||[],postLoadFailed=Boolean(postRes.error);
@@ -83,7 +83,7 @@
     }
 
     if(attendRes) isAttending=!!attendRes.data;
-    render(countRes.count||0,posts,postLoadFailed);
+    render(countRes.data||0,posts,postLoadFailed);
   }
   function sourceHtml(e){
     try {const url=OtakuCatalog.sourceUrl(e.source_url);if(!url)return '';return '<section class="card"><a style="color:#dcc5ff" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">出典・最新の公演情報を確認 ↗</a><p class="notice">確認日: '+(e.source_checked_at?esc(fmt(e.source_checked_at)):'未確認')+' · 開催変更は出典をご確認ください。</p></section>'}catch{return ''}
