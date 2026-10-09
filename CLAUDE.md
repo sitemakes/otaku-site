@@ -69,6 +69,9 @@ bash scripts/check.sh                                   # 上の2つ＋supabase-
 ## 認証
 Supabase Auth（メール + パスワード、確認メール、パスワード再設定）。セッションはブラウザの localStorage。
 Auth 設定は student-chat と共通のため変更しない。退会（`otaku_withdraw`）は OTAKU LIVE のデータ（関連 DM 含む）のみ削除し Auth ユーザーは残す。
+運営者の承認を得て変更済みの共通設定（2026-10-10）:
+- メール送信: カスタム SMTP（Gmail `smtp.gmail.com:587`、専用アカウント `sitemakes.6925@gmail.com` のアプリパスワード、送信者名「サービス通知」）。student-chat のメールも同じ送信元になるため、送信者名にサービス名を入れない。Gmail の送信上限は1日約500通、Supabase 側の上限は30通/時
+- Redirect URLs: `https://otaku-live-mvp.vercel.app/**` を許可。Site URL は student-chat のまま変えない。確認メール・パスワード再設定は `emailRedirectTo` / `redirectTo` で OTAKU LIVE に戻るので、新しいドメインを使うときはここにも追加する
 
 ## 環境変数・秘密情報
 現状 **使用していない**（`api/` にも `process.env` 参照は無いため `.env.example` も置いていない）。Supabase URL と publishable key は公開前提の値（権限は RLS で制御）。
