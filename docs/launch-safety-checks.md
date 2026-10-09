@@ -33,7 +33,8 @@
 - advisor で SECURITY DEFINER と警告される6関数を確認した。既知の4つに加え、`otaku_set_board_pinned`（管理者判定あり）と `otaku_toggle_board_reaction`（ログイン必須・表示可能な投稿のみ）も、`search_path` が固定され anon からは実行できない。意図どおり。
 - 退会時の削除範囲：ユーザーに関わる列はすべて `otaku_profiles` からの連鎖削除の対象。外部キーが無いのは管理者の監査 `actor_id`（管理者は退会できない）と、`otaku_content_reports.target_id`（対象が複数種類ある列）だけ。
 - 同行評価・一般ユーザーへの通報・退会を `db/test-p0-review-report-withdraw.sql` で検証した（21項目通過、結果は `two-user-e2e.md` に記録）。
-- 未解決：
-  - 通報者または対象者が退会すると通報と証拠が消える（ポリシーでは2年保存）。
-  - 「通知・操作ログ90日」を削除する定期処理が無い（pg_cron のジョブは公演リマインダーだけ）。
-  - Free プランなのでバックアップが無い。
+- 2026-10-09 に対応：
+  - 通報の保存：`db/report-retention.sql`（migration `otaku_report_retention`）を適用した。通報者・対象者が退会してもIDが空になるだけで、通報・証拠・対応履歴は残る。通報ガード関数には、外部キーの連鎖更新（IDを空にするだけで、状態は変えないもの）だけを通す例外を追加した。一般ユーザーと管理者が通報のIDを直接書き換えることは、今までどおりできない。dry-run で12項目を確認した。管理画面と自分の通報一覧では「退会済みユーザー」と表示する。
+  - 90日削除：`db/notification-retention.sql`（migration `otaku_notification_retention`）を適用した。pg_cron で毎日 03:30 JST に、作成から90日を過ぎた通知を削除する。適用時点で通知は0件だったので、既存データは消えていない。
+  - バックアップ：Free プランのまま、`scripts/backup-db.ps1` による手動ダンプで運用する（`backup-restore-runbook.md`）。初回のダンプは未実施。
+- 残り：対応終了後2年を過ぎた通報の削除は未実装（最も古い通報が2年に近づくまでに追加する）。

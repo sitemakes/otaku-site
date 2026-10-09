@@ -6,7 +6,7 @@
   $('gate').hidden=true;$('reportAdmin').hidden=false;
   async function load(more=false){
     const request=++generation,offset=more?rows.length:0;
-    let query=otakuSupabase.from('otaku_reports').select('id,reason,details,status,created_at,revision,otaku_profiles!otaku_reports_reporter_id_fkey(display_name),otaku_report_evidence(snapshot)').order('created_at',{ascending:false}).order('id');
+    let query=otakuSupabase.from('otaku_reports').select('id,reason,details,status,created_at,revision,reporter_id,target_user_id,otaku_profiles!otaku_reports_reporter_id_fkey(display_name),otaku_report_evidence(snapshot)').order('created_at',{ascending:false}).order('id');
     if($('statusFilter').value)query=query.eq('status',$('statusFilter').value);
     const {data,error}=await query.range(offset,offset+29);if(request!==generation)return;if(error)throw error;
     rows=more?rows.concat(data):data;$('loadMore').hidden=data.length<30;render();
@@ -14,7 +14,7 @@
   function render(){
     $('reports').innerHTML=rows.length?rows.map(r=>{
       const evidence=r.otaku_report_evidence?.snapshot||{};
-      return `<section class="card"><div class="row"><h2>${esc(s.reasons[r.reason])}</h2><span class="badge">${esc(s.states[r.status])}</span></div><p class="muted">${new Date(r.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})} · 通報者: ${esc(r.otaku_profiles?.display_name||'ユーザー')} · 対象: ${esc(evidence.target_name||'ユーザー')}</p><p class="body">${esc(r.details||'詳細コメントなし')}</p><details><summary>通報された内容・対応履歴</summary>${evidence.post?`<h3>募集内容</h3><p class="body">${esc(evidence.post.body)}</p>`:''}${evidence.message?`<h3>選択されたメッセージ</h3><p class="body">${esc(evidence.message.content)}</p>`:''}${!evidence.post&&!evidence.message?'<p class="muted">募集・メッセージの添付はありません。</p>':''}<div data-history="${r.id}"></div></details><div class="controls"><label for="state-${r.id}">対応状態</label><select id="state-${r.id}">${Object.entries(s.states).map(([v,label])=>`<option value="${v}" ${v===r.status?'selected':''}>${label}</option>`).join('')}</select><button data-save="${r.id}">状態を保存</button></div></section>`;
+      return `<section class="card"><div class="row"><h2>${esc(s.reasons[r.reason])}</h2><span class="badge">${esc(s.states[r.status])}</span></div><p class="muted">${new Date(r.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})} · 通報者: ${esc(r.reporter_id?(r.otaku_profiles?.display_name||'ユーザー'):'退会済みユーザー')} · 対象: ${esc((evidence.target_name||'ユーザー')+(r.target_user_id?'':'（退会済み）'))}</p><p class="body">${esc(r.details||'詳細コメントなし')}</p><details><summary>通報された内容・対応履歴</summary>${evidence.post?`<h3>募集内容</h3><p class="body">${esc(evidence.post.body)}</p>`:''}${evidence.message?`<h3>選択されたメッセージ</h3><p class="body">${esc(evidence.message.content)}</p>`:''}${!evidence.post&&!evidence.message?'<p class="muted">募集・メッセージの添付はありません。</p>':''}<div data-history="${r.id}"></div></details><div class="controls"><label for="state-${r.id}">対応状態</label><select id="state-${r.id}">${Object.entries(s.states).map(([v,label])=>`<option value="${v}" ${v===r.status?'selected':''}>${label}</option>`).join('')}</select><button data-save="${r.id}">状態を保存</button></div></section>`;
     }).join(''):'<p class="muted">該当する通報はありません。</p>';
     document.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{
       const row=rows.find(r=>r.id===b.dataset.save),status=$('state-'+row.id).value;
