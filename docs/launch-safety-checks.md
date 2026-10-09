@@ -38,3 +38,8 @@
   - 90日削除：`db/notification-retention.sql`（migration `otaku_notification_retention`）を適用した。pg_cron で毎日 03:30 JST に、作成から90日を過ぎた通知を削除する。適用時点で通知は0件だったので、既存データは消えていない。
   - バックアップ：Free プランのまま、`scripts/backup-db.ps1` による手動ダンプで運用する（`backup-restore-runbook.md`）。初回のダンプは未実施。
 - 残り：対応終了後2年を過ぎた通報の削除は未実装（最も古い通報が2年に近づくまでに追加する）。
+## メール送信と戻り先URL（2026-10-10）
+- Supabase 標準のメール送信は、1時間に2通までの制限があり、本番向けではなかった。そこで運営者の承認を得て、Auth（student-chat と共通）のカスタム SMTP を Gmail に切り替えた（専用アカウント、アプリパスワード、送信者名「サービス通知」、`smtp.gmail.com:587`）。切り替え後は、Supabase 側の上限が30通/時になった。
+- 設定の途中で、Gmail の認証エラー（535）とポート番号の入力ミスが一時的に起きた。その間は OTAKU LIVE と student-chat の確認メールが送れなかった。いったんカスタム SMTP をオフに戻してから、設定を入れ直した。
+- Redirect URLs が未登録だったため、OTAKU LIVE の確認メールとパスワード再設定のリンクが、Site URL（student-chat）に飛んでいた。`https://otaku-live-mvp.vercel.app/**` を追加し、再設定のリンクで OTAKU LIVE の画面が開くことを確認した。Site URL は変えていない。
+- 残り：利用者が増えたら、独自ドメイン＋専用のメール配信サービス（Resend など）への移行を検討する。
