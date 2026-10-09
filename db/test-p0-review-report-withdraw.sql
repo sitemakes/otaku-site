@@ -114,8 +114,9 @@ begin
   select (select count(*) from public.profiles)+(select count(*) from public.students)
     +(select count(*) from public.conversations)+(select count(*) from public.messages) into v_sc_after;
   if v_sc_after<>v_sc_before then raise exception 'FAIL student-chat rows changed'; end if; v_checks:=v_checks+1;
-  -- Known gap: reports filed by or against a withdrawn user are deleted with the profile.
-  raise notice 'report after withdrawal of reporter: %', (select count(*) from public.otaku_reports where id=v_report);
+  -- Since otaku_report_retention the report and its evidence stay with the reporter id cleared.
+  if not exists(select 1 from public.otaku_reports where id=v_report and reporter_id is null and target_user_id=v_a)
+     or not exists(select 1 from public.otaku_report_evidence where report_id=v_report) then raise exception 'FAIL report not kept after withdrawal'; end if; v_checks:=v_checks+1;
   raise notice 'PASS % checks', v_checks;
 end $$;
 rollback;

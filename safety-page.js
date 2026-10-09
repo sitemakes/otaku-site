@@ -23,7 +23,7 @@
         const {error}=await otakuSupabase.from('otaku_user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',b.dataset.unblock);
         if(error){$('pageMessage').textContent=s.errorText(error);b.disabled=false;return}try{await load('blocks')}catch(error){$('pageMessage').textContent=s.errorText(error);b.disabled=false}
       });
-    }else el.innerHTML=list.map(r=>`<div class="record"><div class="row"><strong>${esc(s.reasons[r.reason])}</strong><span class="badge">${esc(s.states[r.status])}</span></div><p class="muted">対象: ${esc(r.otaku_profiles?.display_name||'ユーザー')} · ${new Date(r.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}</p><p class="body">${esc(r.details)}</p></div>`).join('');
+    }else el.innerHTML=list.map(r=>`<div class="record"><div class="row"><strong>${esc(s.reasons[r.reason])}</strong><span class="badge">${esc(s.states[r.status])}</span></div><p class="muted">対象: ${esc(r.target_user_id?(r.otaku_profiles?.display_name||'ユーザー'):'退会済みユーザー')} · ${new Date(r.created_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}</p><p class="body">${esc(r.details)}</p></div>`).join('');
   }
   for(const kind of ['posts','blocks','reports'])$(kind+'More').onclick=async()=>{const b=$(kind+'More');b.disabled=true;try{await load(kind,true)}catch(error){$('pageMessage').textContent=s.errorText(error)}finally{b.disabled=false}};
   const results=await Promise.allSettled(['posts','blocks','reports'].map(k=>load(k)));
