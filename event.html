@@ -116,6 +116,7 @@
     document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=async()=>{btn.disabled=true;try{await OtakuSafety.closePost(btn.dataset.close,user.id,load)}finally{btn.disabled=false}});
     document.querySelectorAll('[data-report]').forEach(btn=>btn.onclick=()=>OtakuSafety.report(btn.dataset.report,{postId:btn.dataset.context}));
     document.querySelectorAll('[data-block]').forEach(btn=>btn.onclick=()=>OtakuSafety.block(btn.dataset.block,load));
+    document.dispatchEvent(new CustomEvent('otaku:event-rendered'));
   }
   function shareEvent(){
     const shareUrl=new URL(`api/event-share?id=${encodeURIComponent(id)}`,location.origin).href;

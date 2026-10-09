@@ -10,5 +10,6 @@
   const note=document.createElement('p');note.textContent=data.status_note||'最新情報は公式出典をご確認ください。';
   box.append(heading,note);
   if(data.status_updated_at){const date=document.createElement('p');date.className='notice';date.textContent='更新日: '+new Date(data.status_updated_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'});box.append(date)}
+  document.addEventListener('otaku:event-rendered',()=>{if(!box.isConnected){const anchor=document.querySelector('.hero');if(anchor)anchor.insertAdjacentElement('afterend',box)}});
   let tries=0;const insert=()=>{const anchor=document.querySelector('.hero');if(anchor){anchor.insertAdjacentElement('afterend',box);return}if(++tries<30)setTimeout(insert,100)};insert();
 })();
