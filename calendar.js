@@ -8,8 +8,11 @@
   const detailUrl=event=>new URL('event.html?id='+encodeURIComponent(event.id),location.href).href;
   function makeIcs(event){
     const start=new Date(event.starts_at),end=new Date(event.ends_at||start.getTime()+2*60*60*1000);
-    const title=event.title+' | OTAKU LIVE',description='公演詳細: '+detailUrl(event),location=locationOf(event);
-    return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//OTAKU LIVE//JP','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+event.id+'@otaku-live-mvp.vercel.app','DTSTAMP:'+googleDate(new Date()),'DTSTART;TZID=Asia/Tokyo:'+appleDate(start),'DTEND;TZID=Asia/Tokyo:'+appleDate(end),'SUMMARY:'+icsEscape(title),'DESCRIPTION:'+icsEscape(description),'LOCATION:'+icsEscape(location),'URL:'+detailUrl(event),'END:VEVENT','END:VCALENDAR'].join('\r\n')+'\r\n';
+    const prefix=event.event_status==='cancelled'?'【中止】':event.event_status==='postponed'?'【延期】':'';
+    const title=prefix+event.title+' | OTAKU LIVE',description='公演詳細: '+detailUrl(event),location=locationOf(event);
+    const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//OTAKU LIVE//JP','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+event.id+'@otaku-live-mvp.vercel.app','DTSTAMP:'+googleDate(new Date()),'DTSTART;TZID=Asia/Tokyo:'+appleDate(start),'DTEND;TZID=Asia/Tokyo:'+appleDate(end),'SUMMARY:'+icsEscape(title),'DESCRIPTION:'+icsEscape(description),'LOCATION:'+icsEscape(location),'URL:'+detailUrl(event)];
+    if(event.event_status==='cancelled') lines.push('STATUS:CANCELLED');
+    return lines.concat(['END:VEVENT','END:VCALENDAR']).join('\r\n')+'\r\n';
   }
   function downloadIcs(event){
     const blob=new Blob([makeIcs(event)],{type:'text/calendar;charset=utf-8'});

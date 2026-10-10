@@ -87,6 +87,11 @@ function otakuRateLimitMessage(error) {
   return text.includes('rate_limited') ? '短い時間に送信が多すぎます。少し時間を置いてからお試しください。' : null;
 }
 
+function otakuEventCancelledMessage(error) {
+  const text = [error?.message, error?.code, error?.details].filter(Boolean).join(' ');
+  return text.includes('event_cancelled') ? 'この公演は中止になったため、新しい募集やメッセージは作れません。' : null;
+}
+
 function otakuProfileUrl(next = location.href) {
   return `profile.html?next=${encodeURIComponent(next)}`;
 }
