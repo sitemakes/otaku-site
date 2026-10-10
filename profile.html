@@ -13,14 +13,14 @@
 <main class="wrap">
   <div class="top"><strong>OTAKU LIVE</strong><a href="index.html">ホーム</a></div>
   <section class="card"><h1 style="font-size:22px;margin-top:0">プロフィール</h1><div class="muted">同行募集・DMで表示される基本情報です。</div>
-    <div class="field"><label>ユーザーID</label><input id="username" placeholder="例: fan_user_01" /></div>
-    <div class="field"><label>表示名</label><input id="displayName" placeholder="例: 推し活ユーザー" /></div>
+    <div class="field"><label for="username">ユーザーID</label><input id="username" placeholder="例: fan_user_01" /></div>
+    <div class="field"><label for="displayName">表示名</label><input id="displayName" placeholder="例: 推し活ユーザー" /></div>
     <div class="grid">
-      <div class="field"><label>年代</label><select id="ageRange"><option value="unspecified">未設定</option><option value="under_18">18歳未満</option><option value="18_19">18〜19歳</option><option value="20_24">20〜24歳</option><option value="25_29">25〜29歳</option><option value="30s">30代</option><option value="40_plus">40代以上</option></select></div>
-      <div class="field"><label>性別</label><select id="gender"><option value="unspecified">未設定</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
+      <div class="field"><label for="ageRange">年代</label><select id="ageRange"><option value="unspecified">未設定</option><option value="under_18">18歳未満</option><option value="18_19">18〜19歳</option><option value="20_24">20〜24歳</option><option value="25_29">25〜29歳</option><option value="30s">30代</option><option value="40_plus">40代以上</option></select></div>
+      <div class="field"><label for="gender">性別</label><select id="gender"><option value="unspecified">未設定</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
     </div>
-    <div class="grid"><div class="field"><label>都道府県</label><input id="prefecture" placeholder="例: 東京都" /></div><div class="field"><label>同担</label><select id="sameOshi"><option value="depends">どちらでも</option><option value="ok">OK</option><option value="ng">NG</option></select></div></div>
-    <div class="field"><label>自己紹介</label><textarea id="bio" maxlength="500"></textarea></div>
+    <div class="grid"><div class="field"><label for="prefecture">都道府県</label><input id="prefecture" placeholder="例: 東京都" /></div><div class="field"><label for="sameOshi">同担</label><select id="sameOshi"><option value="depends">どちらでも</option><option value="ok">OK</option><option value="ng">NG</option></select></div></div>
+    <div class="field"><label for="bio">自己紹介</label><textarea id="bio" maxlength="500"></textarea></div>
 <div class="field"><strong>公開範囲</strong><div class="muted">オフにした項目は公開プロフィールや公演ページに表示されません。</div><label><input id="showUsername" type="checkbox"> ユーザーIDを公開</label><label><input id="showDisplayName" type="checkbox"> 表示名を公開</label><label><input id="showAvatar" type="checkbox"> プロフィール画像を公開</label><label><input id="showAge" type="checkbox"> 年代を公開</label><label><input id="showGender" type="checkbox"> 性別を公開</label><label><input id="showPrefecture" type="checkbox"> 都道府県を公開</label><label><input id="showBio" type="checkbox"> 自己紹介を公開</label><label><input id="showFavorites" type="checkbox"> 推し情報を公開</label><label><input id="showAttendance" type="checkbox"> 参戦予定を公演ページに表示</label></div>
     <button id="save" class="btn primary">プロフィールを保存</button><div id="msg" class="msg"></div>
   </section>
@@ -33,8 +33,8 @@
     <h2 style="font-size:17px;margin-top:0">推し</h2>
     <div class="muted section-note">メイン推しは同行募集カードに最優先で表示されます。公開済みの実在メンバーを選択できます。</div>
     <label class="muted"><input id="showDemo" type="checkbox"> DEMOメンバーを選択する</label><div class="oshi-add">
-      <div class="field" style="margin:0"><label>グループ</label><select id="groupSelect"></select></div>
-      <div class="field" style="margin:0"><label>メンバー</label><select id="idolSelect"></select></div>
+      <div class="field" style="margin:0"><label for="groupSelect">グループ</label><select id="groupSelect"></select></div>
+      <div class="field" style="margin:0"><label for="idolSelect">メンバー</label><select id="idolSelect"></select></div>
       <button id="addFavorite" class="btn primary">追加</button>
     </div>
     <div id="favMsg" class="msg"></div>
