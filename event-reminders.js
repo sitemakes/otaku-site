@@ -10,9 +10,9 @@
     const [pref,favorites,attendees]=await Promise.all([otakuSupabase.from('otaku_notification_preferences').select('event_reminder_enabled').eq('user_id',user.id).maybeSingle(),otakuSupabase.from('otaku_event_favorites').select('event_id').eq('user_id',user.id),otakuSupabase.from('otaku_event_attendees').select('event_id').eq('user_id',user.id)]);
     if(pref.data?.event_reminder_enabled!==true){target.hidden=true;return}
     const ids=[...new Set([...(favorites.data||[]),...(attendees.data||[])].map(row=>row.event_id).filter(Boolean))];if(!ids.length){target.hidden=true;return}
-    const events=await otakuSupabase.from('otaku_events').select('id,title,venue,starts_at').in('id',ids).eq('publication_status','published').order('starts_at').limit(20);
+    const events=await otakuSupabase.from('otaku_events').select('id,title,venue,starts_at,event_status').in('id',ids).eq('publication_status','published').order('starts_at').limit(20);
     const due=(events.data||[]).map(event=>({...event,label:dayLabel(event.starts_at)})).filter(event=>event.label);target.hidden=false;
-    target.innerHTML=due.length?due.map(event=>`<a class="reminder-item" href="event.html?id=${encodeURIComponent(event.id)}"><strong>${esc(event.label)}</strong><span>${esc(event.title)}</span><small>${new Date(event.starts_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})} · ${esc(event.venue||'')}</small></a>`).join(''):'<p class="meta">7日以内に開催されるお気に入り公演はありません。</p>';
+    target.innerHTML=due.length?due.map(event=>{const status=event.event_status==='cancelled'?'中止':event.event_status==='postponed'?'延期':event.event_status==='changed'?'変更あり':null;return `<a class="reminder-item"${event.event_status==='cancelled'?' style="opacity:.6"':''} href="event.html?id=${encodeURIComponent(event.id)}"><strong>${esc(event.label)}</strong><span>${esc(event.title)}${status?` <b>${esc(status)}</b>`:''}</span><small>${new Date(event.starts_at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})} · ${esc(event.venue||'')}</small></a>`}).join(''):'<p class="meta">7日以内に開催されるお気に入り公演はありません。</p>';
   }
   load();
 })();

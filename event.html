@@ -49,7 +49,7 @@
     if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return}
     const userReady=otakuGetUser().then(async u=>{user=u;if(u) profile=await otakuGetProfile(u.id);return u});
     const [eventRes,countRes,postRes] = await Promise.all([
-      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at').eq('publication_status','published').eq('id',id).maybeSingle(),
+      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at,event_status').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.rpc('otaku_event_attendee_count',{target_event:id}),
       otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles!otaku_companion_posts_user_id_fkey(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
@@ -138,7 +138,7 @@
     if(error||!newConv){
       const {data:retry}=await otakuSupabase.from('otaku_conversations').select('id').eq('companion_post_id',postId).eq('requester_user_id',user.id).maybeSingle();
       if(retry?.id){location.href=`chat.html?id=${encodeURIComponent(retry.id)}`;return}
-      alert(otakuRateLimitMessage(error)||'DMを開始できませんでした。'); button.disabled=false; button.textContent='メッセージを送る'; return;
+      alert(otakuEventCancelledMessage(error)||otakuRateLimitMessage(error)||'DMを開始できませんでした。'); button.disabled=false; button.textContent='メッセージを送る'; return;
     }
     location.href=`chat.html?id=${encodeURIComponent(newConv.id)}`;
   }
