@@ -43,3 +43,10 @@
 - 設定の途中で、Gmail の認証エラー（535）とポート番号の入力ミスが一時的に起きた。その間は OTAKU LIVE と student-chat の確認メールが送れなかった。いったんカスタム SMTP をオフに戻してから、設定を入れ直した。
 - Redirect URLs が未登録だったため、OTAKU LIVE の確認メールとパスワード再設定のリンクが、Site URL（student-chat）に飛んでいた。`https://otaku-live-mvp.vercel.app/**` を追加し、再設定のリンクで OTAKU LIVE の画面が開くことを確認した。Site URL は変えていない。
 - 残り：利用者が増えたら、独自ドメイン＋専用のメール配信サービス（Resend など）への移行を検討する。
+
+## 投稿・DM の使いすぎ対策（2026-10-10）
+- `db/rate-limits.sql` を migration `otaku_rate_limits` として適用した。共通のトリガー関数 `otaku_private.enforce_rate_limit()` を追加し、8テーブルに BEFORE INSERT トリガー `otaku_rate_limit` を付けた（既存のガード関数は変更していない）。
+- 制限値：DM の送信 1分10件・1日300件／DM の開始 10分5件・1日20件／同行募集 1時間5件・1日10件／掲示板の投稿 10分5件・1日30件／掲示板の返信 1分5件・1日100件／グッズ交換 1時間5件・1日10件／公演後の記録 10分5件・1日20件／フォロー 1時間30件・1日100件。
+- 制限に当たると `rate_limited`（errcode 23514）で拒否し、画面には `otakuRateLimitMessage()` の共通の文言を出す。利用者×テーブルごとに advisory lock を取ってから数えるので、同時に送っても数え漏れが出ない。
+- 関数は public・anon・authenticated から実行できない（トリガーからのみ）。advisor に新しい警告は無い。
+- `db/test-rate-limits.sql` を本番 DB で dry-run し、5項目通過した。
