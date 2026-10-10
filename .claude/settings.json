@@ -12,7 +12,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git switch:*)",
-      "Bash(git checkout -b:*)"
+      "Bash(git checkout -b:*)",
+      "Bash(codex exec:*)"
     ],
     "ask": [
       "Bash(git push:*)",

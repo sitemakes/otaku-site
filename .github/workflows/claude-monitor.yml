@@ -42,7 +42,7 @@ jobs:
             done
             echo
             echo "# 配信してはいけないファイル（404 が正常）"
-            for path in /CLAUDE.md /README.md /db/launch-safety.sql /docs/launch-priority.md /scripts/check.sh /.claude/settings.json; do
+            for path in /CLAUDE.md /AGENTS.md /README.md /db/launch-safety.sql /docs/launch-priority.md /scripts/check.sh /.claude/settings.json; do
               r=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${PROD_URL}${path}" || echo "000")
               echo "${path} ${r}"
             done
