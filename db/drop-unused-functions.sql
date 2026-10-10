@@ -1,0 +1,52 @@
+-- Drop two functions that nothing uses (no trigger, cron job, function or frontend reference).
+-- Applied: 2026-10-10. Migration: otaku_drop_unused_functions. Approved by the operator.
+-- - otaku_private.notify_event_status(): superseded by notify_event_lifecycle(); not attached to any trigger.
+-- - public.otaku_create_event_reminders(): superseded by otaku_private.run_event_reminders() (cron);
+--   not executable by anon/authenticated.
+drop function if exists otaku_private.notify_event_status();
+drop function if exists public.otaku_create_event_reminders();
+
+-- Rollback: recreate from the definitions below (as they were on 2026-10-10), then
+-- revoke all on both functions from public, anon, authenticated.
+--
+-- create or replace function otaku_private.notify_event_status() returns trigger
+-- language plpgsql security definer set search_path to '' as $function$
+-- declare title_text text; body_text text;
+-- begin
+--   if auth.uid() is null or not public.otaku_is_catalog_admin() then
+--     raise exception 'catalog_admin_required' using errcode='42501';
+--   end if;
+--   if new.event_status is not distinct from old.event_status
+--      and new.status_note is not distinct from old.status_note then
+--     return new;
+--   end if;
+--   title_text := case new.event_status
+--     when 'cancelled' then '公演中止のお知らせ'
+--     when 'postponed' then '公演延期のお知らせ'
+--     when 'changed' then '公演情報変更のお知らせ'
+--     else '公演情報更新のお知らせ' end;
+--   body_text := coalesce(nullif(btrim(new.status_note),''),'公演情報が更新されました。公式出典をご確認ください。');
+--   insert into public.otaku_notifications(user_id,kind,title,body,href)
+--   select a.user_id,'event',title_text,body_text,'event.html?id='||new.id
+--   from public.otaku_event_attendees a
+--   join public.otaku_notification_preferences p on p.user_id=a.user_id
+--   where a.event_id=new.id and p.in_app_enabled and p.event_reminder_enabled
+--     and not exists(select 1 from public.otaku_user_blocks b
+--       where (b.blocker_id=a.user_id and b.blocked_id=auth.uid())
+--          or (b.blocker_id=auth.uid() and b.blocked_id=a.user_id));
+--   return new;
+-- end $function$;
+--
+-- create or replace function public.otaku_create_event_reminders() returns integer
+-- language plpgsql security definer set search_path to '' as $function$
+-- declare n integer:=0;
+-- begin
+--  insert into public.otaku_notifications(user_id,kind,title,body,href)
+--  select a.user_id,'event','公演がまもなく始まります',e.title||' は24時間以内に開催予定です。','event.html?id='||e.id::text
+--  from public.otaku_event_attendees a join public.otaku_events e on e.id=a.event_id
+--  join public.otaku_notification_preferences p on p.user_id=a.user_id
+--  where a.user_id=auth.uid() and p.in_app_enabled and p.event_reminder_enabled
+--  and e.publication_status='published' and e.starts_at between now() and now()+interval '24 hours'
+--  and not exists(select 1 from public.otaku_notifications x where x.user_id=a.user_id and x.kind='event' and x.href='event.html?id='||e.id::text and x.created_at>now()-interval '7 days');
+--  get diagnostics n=row_count; return n;
+-- end $function$;

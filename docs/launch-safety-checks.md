@@ -75,4 +75,4 @@
 - 権限：通知設定は本人の行だけ読み書きできる。通知は本人が既読（`read_at`）とアーカイブ（`archived_at`）だけを変えられ、作成・削除はできない。お気に入りは `notify` の列だけを変えられる。
 - `db/test-notification-preferences.sql` を本番 DB で実行し（ロールバック）、9項目通過した（DM・掲示板の投稿・掲示板の返信・公演の通知が、オンなら届き、種類ごと・全体のどちらをオフにしても止まる）。
 - 見つけて直した不具合：通知一覧の `safeHref()` が `board.html?event=<ID>` で終わるリンクしか許可しておらず、カテゴリや `#post-<ID>` が付く掲示板の通知が、すべて `#`（移動しないリンク）になっていた。カテゴリと投稿へのジャンプを許可する形に直した（外部 URL・`javascript:`・余計なパラメータは引き続き拒否）。
-- 使われていない古い関数が2つ残っている（`public.otaku_create_event_reminders`：一般ユーザーは実行不可、`otaku_private.notify_event_status`：トリガーに未接続）。削除は破壊的な変更なので、運営者の確認を取ってから行う。
+- 使われていなかった古い関数2つ（`public.otaku_create_event_reminders`・`otaku_private.notify_event_status`）は、どこからも参照されていないことを確認したうえで、運営者の承認を得て削除した（`db/drop-unused-functions.sql`、migration `otaku_drop_unused_functions`。戻すための定義は同じファイルに記録）。
