@@ -49,7 +49,7 @@
     if(!id){root.innerHTML='<div class="error">公演IDがありません。</div>';return}
     const userReady=otakuGetUser().then(async u=>{user=u;if(u) profile=await otakuGetProfile(u.id);return u});
     const [eventRes,countRes,postRes] = await Promise.all([
-      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at,event_status').eq('publication_status','published').eq('id',id).maybeSingle(),
+      otakuSupabase.from('otaku_events').select('id,title,venue,prefecture,city,starts_at,ends_at,is_demo,source_url,source_checked_at,event_status,group_id,otaku_idol_groups(name)').eq('publication_status','published').eq('id',id).maybeSingle(),
       otakuSupabase.rpc('otaku_event_attendee_count',{target_event:id}),
       otakuSupabase.from('otaku_companion_posts').select('id,user_id,type,body,status,preferred_gender,preferred_age_min,preferred_age_max,same_oshi_ok,deadline_at,created_at,closed_at,otaku_profiles!otaku_companion_posts_user_id_fkey(display_name,username,same_oshi_policy)').eq('event_id',id).order('created_at',{ascending:false}).limit(20)
     ]);
@@ -62,6 +62,21 @@
     document.querySelector('meta[name="description"]')?.setAttribute('content',metaDescription);
     document.querySelector('meta[property="og:description"]')?.setAttribute('content',metaDescription);
     document.querySelector('meta[name="twitter:description"]')?.setAttribute('content',metaDescription);
+    if(!e.is_demo){
+      const jsonLd={
+        '@context':'https://schema.org','@type':'Event',name:e.title,startDate:e.starts_at,
+        eventStatus:{cancelled:'https://schema.org/EventCancelled',postponed:'https://schema.org/EventPostponed',changed:'https://schema.org/EventRescheduled'}[e.event_status]||'https://schema.org/EventScheduled',
+        eventAttendanceMode:'https://schema.org/OfflineEventAttendanceMode',
+        location:{'@type':'Place',name:e.venue,address:{'@type':'PostalAddress',addressRegion:e.prefecture,...(e.city?{addressLocality:e.city}:{}),addressCountry:'JP'}},
+        url:'https://otaku-live-mvp.vercel.app/event.html?id='+encodeURIComponent(e.id),image:'https://otaku-live-mvp.vercel.app/og-default.png'
+      };
+      if(e.ends_at) jsonLd.endDate=e.ends_at;
+      const groupName=e.otaku_idol_groups?.name;
+      if(groupName) jsonLd.performer={'@type':'PerformingGroup',name:groupName};
+      let jsonLdScript=document.getElementById('event-jsonld');
+      if(!jsonLdScript){jsonLdScript=document.createElement('script');jsonLdScript.type='application/ld+json';jsonLdScript.id='event-jsonld';document.head.appendChild(jsonLdScript)}
+      jsonLdScript.textContent=JSON.stringify(jsonLd);
+    }
 
     favoriteMap={};
     const ids=[...new Set(posts.map(p=>p.user_id).filter(Boolean))];
