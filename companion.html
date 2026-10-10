@@ -16,14 +16,14 @@
   <h1 class="page-title">同行者を募集</h1>
   <div id="eventName" class="muted page-sub">公演情報を読み込み中...</div>
   <section class="card">
-    <div class="field"><label>募集タイプ</label><select id="type"><option value="looking_for_friend">一緒に行く人を探す</option><option value="have_companion_ticket">同行枠があります</option></select></div>
+    <div class="field"><label for="type">募集タイプ</label><select id="type"><option value="looking_for_friend">一緒に行く人を探す</option><option value="have_companion_ticket">同行枠があります</option></select></div>
     <div class="grid">
-      <div class="field"><label>希望する性別</label><select id="gender"><option value="any">指定なし</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
-      <div class="field"><label>同担</label><select id="sameOshi"><option value="any">どちらでも</option><option value="yes">OK</option><option value="no">NG</option></select></div>
+      <div class="field"><label for="gender">希望する性別</label><select id="gender"><option value="any">指定なし</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
+      <div class="field"><label for="sameOshi">同担</label><select id="sameOshi"><option value="any">どちらでも</option><option value="yes">OK</option><option value="no">NG</option></select></div>
     </div>
-    <div class="grid"><div class="field"><label>希望年齢（下限）</label><input id="ageMin" type="number" min="15" max="99" placeholder="未指定" /></div><div class="field"><label>希望年齢（上限）</label><input id="ageMax" type="number" min="15" max="99" placeholder="未指定" /></div></div>
+    <div class="grid"><div class="field"><label for="ageMin">希望年齢（下限）</label><input id="ageMin" type="number" min="15" max="99" placeholder="未指定" /></div><div class="field"><label for="ageMax">希望年齢（上限）</label><input id="ageMax" type="number" min="15" max="99" placeholder="未指定" /></div></div>
     <div class="field"><label for="deadline">募集締切（任意）</label><input id="deadline" type="datetime-local" /><div class="muted">締切後は新しいメッセージを受け付けません。公演開始前の日時を指定してください。</div></div>
-    <div class="field"><label>コメント</label><textarea id="body" maxlength="1000" placeholder="例：一人参戦です。開演前から一緒に行動できる方を探しています！"></textarea></div>
+    <div class="field"><label for="body">コメント</label><textarea id="body" maxlength="1000" placeholder="例：一人参戦です。開演前から一緒に行動できる方を探しています！"></textarea></div>
     <button id="submit" class="btn">募集を投稿</button><div id="msg" class="msg"></div>
   </section>
 </main>
