@@ -28,3 +28,36 @@ test('events require group, title, venue, valid chronological dates', () => {
   assert.throws(() => c.payload('events',{...event,group_id:''}));
   assert.throws(() => c.payload('events',{...event,title:' '}));
 });
+test('JST day ranges are independent of browser timezone', () => {
+  assert.deepEqual(c.jstDayRange('2026-10-24T08:00:00.000Z'), {from:'2026-10-23T15:00:00.000Z',to:'2026-10-24T15:00:00.000Z'});
+  assert.notDeepEqual(c.jstDayRange('2026-10-24T14:30:00.000Z'), c.jstDayRange('2026-10-24T15:30:00.000Z'));
+});
+test('duplicate events match JST day and annotate proximity and venue', () => {
+  const candidate = {id:'current',group_id:'g',is_demo:false,starts_at:'2026-10-24T08:00:00.000Z',venue:'ゼビオアリーナ仙台'};
+  const existing = [
+    {id:'late',group_id:'g',is_demo:false,starts_at:'2026-10-24T09:01:00.000Z',venue:'abc hall',title:'Late',publication_status:'draft'},
+    {id:'near',group_id:'g',is_demo:false,starts_at:'2026-10-24T08:30:00.000Z',venue:'ゼビオアリーナ　仙台',title:'Near',publication_status:'published'},
+    {id:'current',group_id:'g',is_demo:false,starts_at:'2026-10-24T08:00:00.000Z',venue:'x',title:'Self',publication_status:'draft'},
+    {id:'next',group_id:'g',is_demo:false,starts_at:'2026-10-24T15:30:00.000Z',venue:'x',title:'Next',publication_status:'draft'},
+    {id:'demo',group_id:'g',is_demo:true,starts_at:'2026-10-24T08:00:00.000Z',venue:'x',title:'Demo',publication_status:'draft'},
+    {id:'other',group_id:'other',is_demo:false,starts_at:'2026-10-24T08:00:00.000Z',venue:'x',title:'Other',publication_status:'draft'}
+  ];
+  const result = c.duplicateEvents(candidate, existing);
+  assert.deepEqual(result.map(row => row.id), ['near','late']);
+  assert.equal(result[0].nearTime, true); assert.equal(result[0].sameVenue, true);
+  assert.equal(result[1].nearTime, false); assert.equal(result[1].sameVenue, false);
+  assert.equal(c.normalizeVenue('ＡＢＣ Hall'), c.normalizeVenue('abc hall'));
+  assert.deepEqual(existing[0], {id:'late',group_id:'g',is_demo:false,starts_at:'2026-10-24T09:01:00.000Z',venue:'abc hall',title:'Late',publication_status:'draft'});
+  assert.equal(c.duplicateEvents({id:'x',group_id:'g',is_demo:false,starts_at:'2026-10-24T14:30:00.000Z',venue:'x'}, [{id:'y',group_id:'g',is_demo:false,starts_at:'2026-10-24T14:59:00.000Z',venue:'x',title:'x',publication_status:'draft'}])[0].nearTime, true);
+});
+test('duplicate events compare equivalent UTC timestamp formats numerically', () => {
+  const candidate = {id:'current',group_id:'g',is_demo:false,starts_at:'2026-10-24T08:00:00.000Z',venue:'x'};
+  const existing = [
+    {id:'start',group_id:'g',is_demo:false,starts_at:'2026-10-23T15:00:00+00:00',venue:'x',title:'Start',publication_status:'draft'},
+    {id:'same',group_id:'g',is_demo:false,starts_at:'2026-10-24T08:00:00+00:00',venue:'x',title:'Same',publication_status:'draft'},
+    {id:'next',group_id:'g',is_demo:false,starts_at:'2026-10-24T15:00:00+00:00',venue:'x',title:'Next',publication_status:'draft'}
+  ];
+  const result = c.duplicateEvents(candidate, existing);
+  assert.deepEqual(result.map(row => row.id), ['start','same']);
+  assert.equal(result[1].nearTime, true);
+});

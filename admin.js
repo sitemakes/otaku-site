@@ -84,6 +84,20 @@
       // Every save invalidates prior verification unless the editor reconfirms it.
       values.source_checked_at = $('verified').checked ? new Date().toISOString() : null;
       const payload = OtakuCatalog.payload($('kind').value, values);
+      if ($('kind').value === 'events' && (!editing || editing.group_id !== payload.group_id || Date.parse(editing.starts_at) !== Date.parse(payload.starts_at))) {
+        setBusy(true);
+        const range = OtakuCatalog.jstDayRange(payload.starts_at);
+        const {data, error} = await otakuSupabase.from('otaku_events').select('id,title,venue,starts_at,publication_status,group_id,is_demo')
+          .eq('group_id', payload.group_id).eq('is_demo', payload.is_demo).gte('starts_at', range.from).lt('starts_at', range.to);
+        if (error) throw error;
+        setBusy(false);
+        const duplicates = OtakuCatalog.duplicateEvents({id: editing?.id, group_id: payload.group_id, is_demo: payload.is_demo, starts_at: payload.starts_at, venue: payload.venue}, data);
+        if (duplicates.length && !confirm(['同じグループの同じ日の公演がすでに登録されています。', ...duplicates.map(duplicate => {
+          const jst = OtakuCatalog.toJst(duplicate.starts_at);
+          const details = [duplicate.nearTime ? '開始時刻がほぼ同じ' : '', duplicate.sameVenue ? '同じ会場' : ''].filter(Boolean);
+          return `・${duplicate.title}（${jst.slice(5, 7).replace(/^0/, '')}/${jst.slice(8, 10).replace(/^0/, '')} ${jst.slice(11, 16)}、${duplicate.venue}、${labels[duplicate.publication_status]}）${details.length ? `［${details.join('・')}］` : ''}`;
+        }), '二重登録でないことを確認しましたか？ OK で保存します。'].join('\n'))) return;
+      }
       if (payload.publication_status === 'published' && !confirm('入力内容を公開します。出典と内容を確認しましたか？')) return;
       setBusy(true);
       let query = otakuSupabase.from(tables[$('kind').value]);
