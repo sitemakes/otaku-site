@@ -1,6 +1,7 @@
 # Dump the shared Supabase database (roles, schema, data) into a dated folder and
 # delete local backups older than 30 days (privacy policy: backups are kept at most 30 days).
 # Needs Docker Desktop running and Node.js (uses `npx supabase`). See docs/backup-restore-runbook.md.
+# Runs npx from outside the repo: in the repo root, "supabase" resolves to supabase.js via PATHEXT.
 #
 # Usage (PowerShell):
 #   $env:OTAKU_DB_URL = "<Session pooler connection string with the DB password>"
@@ -34,23 +35,29 @@ function Fail($msg) {
   Write-Error $msg
 }
 
-npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "roles.sql") --role-only
-if ($LASTEXITCODE -ne 0) { Fail "roles dump failed" }
-npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "schema.sql")
-if ($LASTEXITCODE -ne 0) { Fail "schema dump failed" }
-npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "data.sql") --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
-if ($LASTEXITCODE -ne 0) { Fail "data dump failed" }
+Push-Location $BackupRoot
+try {
+  npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "roles.sql") --role-only
+  if ($LASTEXITCODE -ne 0) { Fail "roles dump failed" }
+  npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "schema.sql")
+  if ($LASTEXITCODE -ne 0) { Fail "schema dump failed" }
+  npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "data.sql") --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+  if ($LASTEXITCODE -ne 0) { Fail "data dump failed" }
 
-foreach ($name in "roles.sql", "schema.sql", "data.sql") {
-  $file = Get-Item (Join-Path $dir $name)
-  if ($file.Length -eq 0) { Fail "$name is empty" }
-}
-$tables = (Select-String -Path (Join-Path $dir "data.sql") -Pattern '^COPY "public"\."otaku_' | Measure-Object).Count
-Write-Output "Saved to $dir ($tables OTAKU LIVE tables in data.sql)"
-
-Get-ChildItem $BackupRoot -Directory |
-  Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-$KeepDays) } |
-  ForEach-Object {
-    Write-Output "Removing expired backup $($_.FullName)"
-    Remove-Item -Recurse -Force $_.FullName
+  foreach ($name in "roles.sql", "schema.sql", "data.sql") {
+    $file = Get-Item (Join-Path $dir $name)
+    if ($file.Length -eq 0) { Fail "$name is empty" }
   }
+  $tables = (Select-String -Path (Join-Path $dir "data.sql") -Pattern '^COPY "public"\."otaku_' | Measure-Object).Count
+  Write-Output "Saved to $dir ($tables OTAKU LIVE tables in data.sql)"
+
+  Get-ChildItem $BackupRoot -Directory |
+    Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-$KeepDays) } |
+    ForEach-Object {
+      Write-Output "Removing expired backup $($_.FullName)"
+      Remove-Item -Recurse -Force $_.FullName
+    }
+}
+finally {
+  Pop-Location
+}
