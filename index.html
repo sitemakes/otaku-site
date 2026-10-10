@@ -3,8 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OTAKU LIVE</title>
-  <meta name="description" content="アイドル現場の参戦予定・同行募集をまとめるMVP" />
+  <title>OTAKU LIVE｜アイドルライブの参戦予定・同行募集</title>
+  <meta name="description" content="アイドルライブの公演情報・参戦予定・同行募集・グッズ交換をまとめるファンのためのサイト。" />
+  <link rel="canonical" href="https://otaku-live-mvp.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="OTAKU LIVE">
+  <meta property="og:title" content="OTAKU LIVE｜アイドルライブの参戦予定・同行募集">
+  <meta property="og:description" content="アイドルライブの公演情報・参戦予定・同行募集・グッズ交換をまとめるファンのためのサイト。">
+  <meta property="og:url" content="https://otaku-live-mvp.vercel.app/">
+  <meta property="og:image" content="https://otaku-live-mvp.vercel.app/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <style>
     :root{--bg:#0a0a0f;--card:#15151d;--card2:#1c1c26;--text:#f4f2f8;--muted:#a9a7b8;--accent:#d6246f;--accent2:#d6246f;--line:#262632}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0a0a0f,#11111a);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
@@ -17,7 +27,7 @@
 </head>
 <body>
   <main class="wrap">
-    <div class="top"><div class="brand">OTAKU LIVE</div><div class="right"><div class="pill">MVP</div><a id="authLink" class="login" href="login.html">ログイン</a></div></div>
+    <div class="top"><div class="brand">OTAKU LIVE</div><div class="right"><a id="authLink" class="login" href="login.html">ログイン</a></div></div>
     <section class="hero"><p class="eyebrow">NEXT STAGE</p><h1>次の現場を、<br>一緒に楽しむ人を<br>探そう。</h1><p>ライブを起点に、参戦予定・同行募集・現地交流をつなぐアイドルファン向けプラットフォーム。</p></section>
     <div class="search"><input id="q" placeholder="ライブ名・会場・地域で検索" /><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"><select id="groupFilter" aria-label="グループで絞り込み" style="flex:1;min-width:150px;padding:10px;border-radius:12px;background:#111118;color:white;border:1px solid var(--line)"><option value="">全グループ</option></select><select id="prefectureFilter" aria-label="都道府県で絞り込み" style="flex:1;min-width:150px;padding:10px;border-radius:12px;background:#111118;color:white;border:1px solid var(--line)"><option value="">全都道府県</option></select><select id="monthFilter" aria-label="開催月で絞り込み" style="flex:1;min-width:150px;padding:10px;border-radius:12px;background:#111118;color:white;border:1px solid var(--line)"><option value="">全開催月</option></select></div></div>
     <h2>開催予定ライブ</h2><p id="personalizedHint" class="meta" hidden>推し・地域に合う公演を上に表示しています。</p><label class="meta"><input id="showDemo" type="checkbox"> DEMO公演を表示する</label>

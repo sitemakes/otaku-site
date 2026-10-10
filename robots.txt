@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /venue-admin.html
+Disallow: /reports.html
+Disallow: /content-admin.html
+Disallow: /review-admin.html
+Disallow: /api/
+Sitemap: https://otaku-live-mvp.vercel.app/sitemap.xml
