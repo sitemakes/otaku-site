@@ -14,7 +14,8 @@ Free プランでは Supabase の自動バックアップを使えないので�
 
 **毎回の手順**（PowerShell）
 1. パスワードを画面に出さずに接続文字列を作る: `$pw = Read-Host "DBのパスワード" -AsSecureString` → `$env:OTAKU_DB_URL = "postgresql://postgres.pfyvsweuvdnpmvabfflh:" + [uri]::EscapeDataString([Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($pw))) + "@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"`。接続文字列とパスワードはチャット・リポジトリ・メモに貼らない。
-2. `powershell -ExecutionPolicy Bypass -File scripts\backup-db.ps1`
+2. **リポジトリの外のフォルダで**実行する: `cd $env:USERPROFILE` → `powershell -ExecutionPolicy Bypass -File "C:\Users\yasuk\OneDrive\コード一覧\otaku-site\scripts\backup-db.ps1"`
+   - 注意（2026-10-11）: リポジトリ直下には `supabase.js` があるため、そこで実行すると Windows が `npx supabase` を「supabase.js を開く」と解釈して VS Code が起動し、ダンプが進まない（保存先フォルダが空のまま止まる）。止まったら Ctrl+C で止め、上のとおりホームフォルダから実行し直す。
    - `%USERPROFILE%\otaku-db-backups\<日時>\` に `roles.sql` `schema.sql` `data.sql` が保存される。リポジトリ内やOneDriveの同期フォルダには保存しない。
    - 30日を過ぎたバックアップフォルダは、このスクリプトが自動で削除する（プライバシーポリシーの「バックアップは最長30日」）。
 3. `Remove-Item Env:OTAKU_DB_URL; Remove-Variable pw`
@@ -26,6 +27,7 @@ Free プランでは Supabase の自動バックアップを使えないので�
 
 | 実施日 | 実施者 | 保存先 | OTAKU LIVE テーブル数 | 備考 |
 |---|---|---|---|---|
+| 2026-10-11 | 運営者 | %USERPROFILE%\otaku-db-backups\2026-10-11_0334 | 37 | 告知前。data.sql 約645KB・schema.sql 約283KB・roles.sql。リポジトリのフォルダで実行すると止まったため、ホームフォルダからフルパスで実行した（下の注意） |
 | 2026-10-10 | 運営者 | %USERPROFILE%\otaku-db-backups\2026-10-10_1828 | 37（DB の otaku_* テーブル37個と一致） | 初回。data.sql 約88KB・schema.sql 約280KB（otaku_private の関数33・RLS ポリシー125を含む）・roles.sql。1回目はパスワード違いで失敗したため、DB パスワードを再設定した |
 
 ## 復元演習
