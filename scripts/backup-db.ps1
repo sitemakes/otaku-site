@@ -29,17 +29,21 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Docker Desktop is not running." }
 
 $dir = Join-Path $BackupRoot (Get-Date -Format "yyyy-MM-dd_HHmm")
 New-Item -ItemType Directory -Force $dir | Out-Null
+function Fail($msg) {
+  Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
+  Write-Error $msg
+}
 
 npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "roles.sql") --role-only
-if ($LASTEXITCODE -ne 0) { Write-Error "roles dump failed" }
+if ($LASTEXITCODE -ne 0) { Fail "roles dump failed" }
 npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "schema.sql")
-if ($LASTEXITCODE -ne 0) { Write-Error "schema dump failed" }
+if ($LASTEXITCODE -ne 0) { Fail "schema dump failed" }
 npx --yes supabase db dump --db-url $env:OTAKU_DB_URL -f (Join-Path $dir "data.sql") --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
-if ($LASTEXITCODE -ne 0) { Write-Error "data dump failed" }
+if ($LASTEXITCODE -ne 0) { Fail "data dump failed" }
 
 foreach ($name in "roles.sql", "schema.sql", "data.sql") {
   $file = Get-Item (Join-Path $dir $name)
-  if ($file.Length -eq 0) { Write-Error "$name is empty" }
+  if ($file.Length -eq 0) { Fail "$name is empty" }
 }
 $tables = (Select-String -Path (Join-Path $dir "data.sql") -Pattern '^COPY "public"\."otaku_' | Measure-Object).Count
 Write-Output "Saved to $dir ($tables OTAKU LIVE tables in data.sql)"
