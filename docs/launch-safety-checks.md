@@ -50,3 +50,4 @@
 - 制限に当たると `rate_limited`（errcode 23514）で拒否し、画面には `otakuRateLimitMessage()` の共通の文言を出す。利用者×テーブルごとに advisory lock を取ってから数えるので、同時に送っても数え漏れが出ない。
 - 関数は public・anon・authenticated から実行できない（トリガーからのみ）。advisor に新しい警告は無い。
 - `db/test-rate-limits.sql` を本番 DB で dry-run し、5項目通過した。
+- 画面での連投テストは未実施（2026-10-10）。アプリ内ブラウザが、このサイトの CSS・JS の読み込みを `ERR_BLOCKED_BY_CLIENT` で止めるようになったため。サーバーからはすべて 200 で返り、配信中の `supabase.js` に `otakuRateLimitMessage` が入っていることは確認した。運営者の判断で、DB での確認をもって完了とした。
