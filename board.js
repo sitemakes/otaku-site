@@ -61,7 +61,7 @@
       loading = true; submit.disabled = true;
       const {error} = await otakuSupabase.from('otaku_board_replies').insert({post_id:postId,user_id:user.id,body});
       loading = false; submit.disabled = false;
-      if (error) { alert('返信を投稿できませんでした。'); return; }
+      if (error) { alert(otakuRateLimitMessage(error) || '返信を投稿できませんでした。'); return; }
       await load(); document.getElementById(`post-${postId}`)?.scrollIntoView({block:'center'});
     });
     form.append(textarea, submit); return form;
@@ -176,7 +176,7 @@
     const row = {user_id:user.id,title,body,category:$('category').value};
     if (eventId) row.event_id=eventId; else if (idolId) row.idol_id=idolId;
     const {error} = await otakuSupabase.from('otaku_board_posts').insert(row);
-    $('status').textContent = error ? '投稿できませんでした。' : '投稿しました。';
+    $('status').textContent = error ? (otakuRateLimitMessage(error) || '投稿できませんでした。') : '投稿しました。';
     if (!error) { $('postTitle').value=''; $('body').value=''; await load(); }
     loading = false; $('send').disabled = false;
   };

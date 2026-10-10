@@ -35,7 +35,7 @@ async function sendMessage(){
   const content=$('input').value.trim();if(!content||!conversation||sending)return;sending=true;$('send').disabled=true;
   try{
     const {error}=await otakuSupabase.from('otaku_messages').insert({conversation_id:id,sender_id:user.id,content});
-    if(error){$('chatNotice').textContent=OtakuSafety.errorText(error);if(error.code==='42501')await loadMessages();return}
+    if(error){$('chatNotice').textContent=otakuRateLimitMessage(error)||OtakuSafety.errorText(error);if(error.code==='42501')await loadMessages();return}
     $('input').value='';await loadMessages(true);
   }finally{sending=false;$('send').disabled=false}
 }

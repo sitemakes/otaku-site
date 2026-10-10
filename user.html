@@ -13,7 +13,7 @@
 const id=new URLSearchParams(location.search).get('id'),esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let viewer=null, following=false, busy=false;
 const categoryLabels={general:'総合',event_info:'公演情報',goods:'グッズ',venue:'会場',companion:'同行募集',other:'その他'};
-async function toggleFollow(){if(!viewer||busy)return;busy=true;follow.disabled=true;const result=following?await otakuSupabase.from('otaku_user_follows').delete().eq('follower_id',viewer.id).eq('followed_id',id):await otakuSupabase.from('otaku_user_follows').insert({follower_id:viewer.id,followed_id:id});if(result.error){followStatus.textContent='フォロー状態を変更できませんでした。';}else{following=!following;renderFollow();followStatus.textContent=following?'フォローしました。':'フォローを解除しました。';}busy=false;follow.disabled=false}
+async function toggleFollow(){if(!viewer||busy)return;busy=true;follow.disabled=true;const result=following?await otakuSupabase.from('otaku_user_follows').delete().eq('follower_id',viewer.id).eq('followed_id',id):await otakuSupabase.from('otaku_user_follows').insert({follower_id:viewer.id,followed_id:id});if(result.error){followStatus.textContent=otakuRateLimitMessage(result.error)||'フォロー状態を変更できませんでした。';}else{following=!following;renderFollow();followStatus.textContent=following?'フォローしました。':'フォローを解除しました。';}busy=false;follow.disabled=false}
 function renderFollow(){follow.hidden=!viewer||viewer.id===id;follow.className=`follow${following?' off':''}`;follow.textContent=following?'フォロー中':'フォローする'}
 function activityEmpty(text='公開されている活動はまだありません。'){activity.innerHTML=`<div class="muted">${text}</div>`}
 async function loadStats(profile){

@@ -82,6 +82,11 @@ function otakuLoginUrl(next = location.href) {
   return `login.html?next=${encodeURIComponent(next)}`;
 }
 
+function otakuRateLimitMessage(error) {
+  const text = [error?.message, error?.code, error?.details].filter(Boolean).join(' ');
+  return text.includes('rate_limited') ? '短い時間に送信が多すぎます。少し時間を置いてからお試しください。' : null;
+}
+
 function otakuProfileUrl(next = location.href) {
   return `profile.html?next=${encodeURIComponent(next)}`;
 }
