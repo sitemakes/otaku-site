@@ -2,6 +2,7 @@ db/
 tests/
 README.md
 CLAUDE.md
+AGENTS.md
 docs/
 .claude/
 .github/

@@ -2,6 +2,14 @@
 
 AI・開発者がこのリポジトリを引き継ぐための要点。詳細な運用ルールは `README.md` と `docs/` を参照。
 
+## 役割分担（Claude は設計・レビュー、Codex は実装）
+- **Claude（Claude Code）**: 設計・レビュー担当。アプリのコード（`*.html` `*.js` `*.css` `api/` `db/` `tests/`）は原則として自分で書かない
+- **Codex**: 実装担当。`docs/PLAN.md` に書かれた内容だけを実装する（Codex 向けのルールは `AGENTS.md`）
+- 流れ: `/design <やりたいこと>` → ユーザーが docs/PLAN.md を承認 → `/delegate <番号>` → `/check <番号>` → 要修正なら `/delegate` に戻る
+- Claude が編集してよいのは `docs/`・この CLAUDE.md・`AGENTS.md`・`.claude/` のみ。ユーザーに明示的に頼まれたときは例外
+- PLAN.md は Codex が会話の文脈なしで読んでも実装できる具体さで書く（ファイル名・関数名・処理の流れ・確認方法まで）。1回の委任は1ステップ
+- GitHub Actions（`@claude`）では Codex を使えないため、この分担は適用せず Claude が直接実装してよい
+
 ## サイト概要
 アイドル現場向けの Web サービス（本番: https://otaku-live-mvp.vercel.app ）。
 公演一覧・詳細、参戦予定、同行募集（→DM→同行成立→評価）、グッズ交換、掲示板、公演後の記録、通報・ブロック、管理画面。
@@ -23,7 +31,7 @@ AI・開発者がこのリポジトリを引き継ぐための要点。詳細な
 - Serverless: `api/*.js`（Vercel Node Functions、CommonJS）
   - `client-error.js` ブラウザ例外を Vercel ログへ記録（本番オリジン以外は 403）
   - `event-share.js` / `event-og.js` 公演の共有ページ・OGP画像（公開済み公演のみ、5分キャッシュ）
-- Hosting: Vercel プロジェクト `otaku-live-mvp`（Framework Preset: Other、Build/Install コマンド無し、Root はリポジトリ直下）。`.vercelignore` で `db/` `tests/` `docs/` `README.md` `CLAUDE.md` は配信しない
+- Hosting: Vercel プロジェクト `otaku-live-mvp`（Framework Preset: Other、Build/Install コマンド無し、Root はリポジトリ直下）。`.vercelignore` で `db/` `tests/` `docs/` `README.md` `CLAUDE.md` `AGENTS.md` は配信しない
 - Storage: 未使用（プロフィール画像は外部 https URL を保存するだけ）
 - Styling: 共通テーマ `theme.css`（"Stage Night" デザイン、全25ページで読み込み）＋各ページ inline `<style>`。法務ページは `legal.css`、安全系ページは `safety-pages.css`
 - 外部サービス: Supabase、Vercel、jsDelivr、Google Fonts（Space Grotesk / Zen Kaku Gothic New）、Google/Apple Maps へのリンクのみ
@@ -96,6 +104,7 @@ service_role key・DB パスワードなどの秘密情報は **絶対にリポ�
 
 ## 自動化（Claude Code / GitHub Actions）
 - `.claude/settings.json`: 権限（聞かずに実行 / 確認 / 禁止）と hooks。`.js` 編集直後に構文チェック、終了時に `scripts/check.sh`
+- `.claude/commands/`: `/design`（PLAN.md を書く）・`/delegate`（`codex exec` で Codex に実装させる）・`/check`（PLAN.md と差分を照合）
 - `.github/workflows/claude.yml`: Issue・PR で `@claude` → 対応してPR作成。Actions からは DB に接続しないので、DB 変更は `db/` に SQL として記録し適用・戻し手順を PR に書く
 - `.github/workflows/claude-monitor.yml`: 毎朝 08:50 JST に本番の応答・内部資料の非公開・外部依存・`scripts/check.sh` を確認し、異常時は `health-check` ラベルの Issue を作る
 - `.claude/` `.github/` `scripts/` は `.vercelignore` で配信対象外
