@@ -21,6 +21,21 @@
   function toJst(value) {
     return value ? new Date(new Date(value).getTime() + 9 * 3600000).toISOString().slice(0, 16) : '';
   }
+  function normalizeVenue(text) {
+    return String(text || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+  }
+  function jstDayRange(startsAtIso) {
+    const shifted = new Date(new Date(startsAtIso).getTime() + 9 * 3600000);
+    const dayStart = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - 9 * 3600000;
+    return { from: new Date(dayStart).toISOString(), to: new Date(dayStart + 24 * 3600000).toISOString() };
+  }
+  function duplicateEvents(candidate, existing) {
+    const range = jstDayRange(candidate.starts_at);
+    const candidateTime = new Date(candidate.starts_at).getTime();
+    return existing.filter(event => event.group_id === candidate.group_id && event.is_demo === candidate.is_demo && event.id !== candidate.id && Date.parse(event.starts_at) >= Date.parse(range.from) && Date.parse(event.starts_at) < Date.parse(range.to))
+      .map(event => ({ ...event, nearTime: Math.abs(new Date(event.starts_at).getTime() - candidateTime) <= 30 * 60000, sameVenue: normalizeVenue(event.venue) === normalizeVenue(candidate.venue) }))
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  }
   function payload(kind, values) {
     const result = { publication_status: values.publication_status, is_demo: !!values.is_demo,
       source_url: sourceUrl(values.source_url), source_kind: values.source_kind || null,
@@ -69,6 +84,6 @@
     };
     return messages[error.message] || (error.code ? '保存できませんでした。入力内容と接続を確認してください。' : error.message);
   }
-  root.OtakuCatalog = { sourceUrl, jst, toJst, payload, errorMessage };
+  root.OtakuCatalog = { sourceUrl, jst, toJst, normalizeVenue, jstDayRange, duplicateEvents, payload, errorMessage };
   if (typeof module !== 'undefined') module.exports = root.OtakuCatalog;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
