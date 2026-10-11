@@ -63,3 +63,18 @@ A → B（dry-run まで）→ C（アカウント準備）→ 本番投稿、�
 ### E. X 用の1タップ投稿リンク（2026-10-11 承認、無料）
 **完了（PR #44）**
 X は API で自動投稿しない（有料のため）。毎日の実行で X 用の文面（重み付き280以内）を作り、`https://x.com/intent/post?text=...` のリンクを付けて、GitHub の Issue「X 投稿用の文面」（ラベル `x-post`）にコメントする。運営者は通知メールのリンクを押して「ポスト」するだけ。
+
+### F. 週次の集客レポート（分析と改善案）— 承認待ち（2026-10-12）
+目的：毎週、SNS の閲覧数・サイトのアクセス数・サイト内の利用状況を集め、分析と改善案を Issue で受け取る。
+
+1. **アクセス数の計測（新規）**：個人を特定しない「日別・ページ別の閲覧回数」だけを数える。
+   - DB（migration `otaku_page_view_counts`）：テーブル `otaku_page_view_counts(day date, path text, views int, primary key(day,path))`。RLS 有効・直接の読み書きは不可。`otaku_count_page_view(path text)` を SECURITY DEFINER で追加し anon/authenticated に実行を許可（path は許可リストのページ名＋`event` のような種類だけに正規化、1日1ページ上限1万回で打ち止め）。IP・ユーザーID・Cookie は保存しない。
+   - 画面：共通の `supabase.js` で、ページ表示時に1回だけ `otaku_count_page_view` を呼ぶ（失敗は無視）。管理画面は数えない。
+   - プライバシーポリシーに「個人を特定しない閲覧回数の集計」を追記（改定日更新）。
+2. **集計用の関数**：`otaku_growth_stats(report_key text, days int)` を SECURITY DEFINER で追加し、集計値だけ（期間内の新規登録数、参戦予定の登録数、同行募集・DM・掲示板・グッズの投稿数、ページ別閲覧回数）を返す。個人の情報は返さない。誰でも呼べないよう、`otaku_private` に保存したレポート用キーのハッシュと一致したときだけ返す（キー本体は GitHub Secrets の `REPORT_KEY` にだけ置く。service_role キーは使わない）。
+3. **レポートの仕事**：`.github/workflows/growth-report.yml`（毎週月曜 9:17 JST）
+   - `scripts/marketing/report-data.mjs` が、Threads/Instagram のインサイト（投稿ごとの表示・反応、テンプレート別成績）と `otaku_growth_stats(7)`・前週比を集め `report.json` を作る。
+   - 既存の Claude 連携（`anthropics/claude-code-action`、`CLAUDE_CODE_OAUTH_TOKEN`）に `report.json` と `docs/launch-priority.md` を読ませ、Issue「週次集客レポート（YYYY-MM-DD）」に、数字の要約・前週比・伸びた/伸びなかった投稿・改善案3つ（すぐできる順、根拠つき）を書かせる。コードの変更や PR は作らせない。
+4. Search Console の検索流入は API 連携に Google の認証設定が要るため、今回は対象外（運営者が画面で確認、必要なら後で追加）。
+
+完了条件：サイトの閲覧回数が日別に記録される／手動実行でレポート Issue が作られ、数字と改善案が入っている／`bash scripts/check.sh` すべてOK。
