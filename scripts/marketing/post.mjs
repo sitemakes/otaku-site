@@ -1,3 +1,5 @@
+import { appendFileSync } from 'node:fs';
+
 const SUPABASE_URL = 'https://pfyvsweuvdnpmvabfflh.supabase.co/rest/v1/otaku_events';
 const SUPABASE_KEY = 'sb_publishable_FJ9hNx9T4-sNV6Ypv94vJA_cCq5TxUp';
 const SITE_URL = 'https://otaku-live-mvp.vercel.app/';
@@ -212,7 +214,7 @@ async function main() {
   if (reportOnly) {
     if (!stats) { console.log('Threads 成績なし'); return; }
     const table = ['| テンプレート | 投稿数 | 平均表示 | 平均反応率 |', '|---|---:|---:|---:|', ...['A', 'B', 'C'].map((name) => { const s = stats[name]; const rate = s.views ? s.engagements / s.views : 0; return `| ${name} | ${s.posts} | ${(s.views / (s.posts || 1)).toFixed(1)} | ${(rate * 100).toFixed(2)}% |`; })].join('\n');
-    if (process.env.GITHUB_STEP_SUMMARY) require('node:fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`); else console.log(table);
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`); else console.log(table);
     return;
   }
   const params = new URLSearchParams({ select: 'id,title,venue,prefecture,starts_at,created_at,otaku_idol_groups(name)', publication_status: 'eq.published', is_demo: 'eq.false', starts_at: `gte.${new Date().toISOString()}`, order: 'starts_at.asc', limit: '1000' });
