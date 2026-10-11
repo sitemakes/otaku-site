@@ -95,3 +95,13 @@ function otakuEventCancelledMessage(error) {
 function otakuProfileUrl(next = location.href) {
   return `profile.html?next=${encodeURIComponent(next)}`;
 }
+
+(() => {
+  if (window.__otakuViewCounted || location.hostname !== 'otaku-live-mvp.vercel.app' || navigator.webdriver) return;
+  const excludedPages = new Set(['admin.html', 'venue-admin.html', 'reports.html', 'content-admin.html', 'review-admin.html']);
+  const pathParts = location.pathname.split('/');
+  const fileName = pathParts.pop() || 'index.html';
+  if (excludedPages.has(fileName)) return;
+  window.__otakuViewCounted = true;
+  otakuSupabase.rpc('otaku_count_page_view', { target_path: fileName }).then(() => {}, () => {});
+})();
