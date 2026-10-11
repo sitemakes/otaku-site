@@ -65,14 +65,30 @@ async function jsonRequest(url, options) {
   if (!response.ok) { let message = `HTTP ${response.status}`; try { message += `: ${(await response.json()).error?.message || 'request failed'}`; } catch {} throw new Error(message); }
   return response.json();
 }
+async function fetchThreadsUser() {
+  const result = await jsonRequest(`https://graph.threads.net/v1.0/me?fields=id,username&access_token=${encodeURIComponent(process.env.THREADS_TOKEN)}`, { method: 'GET' });
+  return { id: result.id, username: result.username };
+}
+async function resolveThreadsUser() {
+  return process.env.THREADS_USER_ID ? { id: process.env.THREADS_USER_ID } : fetchThreadsUser();
+}
+async function fetchInstagramUser() {
+  const result = await jsonRequest(`https://graph.instagram.com/v22.0/me?fields=user_id,username&access_token=${encodeURIComponent(process.env.IG_TOKEN)}`, { method: 'GET' });
+  return { id: result.user_id || result.id, username: result.username };
+}
+async function resolveInstagramUser() {
+  return process.env.IG_USER_ID ? { id: process.env.IG_USER_ID } : fetchInstagramUser();
+}
 async function postThreads(text) {
   const base = 'https://graph.threads.net/v1.0';
-  const made = await jsonRequest(`${base}/${process.env.THREADS_USER_ID}/threads`, { method: 'POST', body: new URLSearchParams({ media_type: 'TEXT', text, access_token: process.env.THREADS_TOKEN }) });
-  await jsonRequest(`${base}/${process.env.THREADS_USER_ID}/threads_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.THREADS_TOKEN }) });
+  const user = await resolveThreadsUser();
+  const made = await jsonRequest(`${base}/${user.id}/threads`, { method: 'POST', body: new URLSearchParams({ media_type: 'TEXT', text, access_token: process.env.THREADS_TOKEN }) });
+  await jsonRequest(`${base}/${user.id}/threads_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.THREADS_TOKEN }) });
 }
 async function postInstagram(caption) {
   const base = 'https://graph.instagram.com/v22.0';
-  const made = await jsonRequest(`${base}/${process.env.IG_USER_ID}/media`, { method: 'POST', body: new URLSearchParams({ image_url: IMAGE_URL, caption, access_token: process.env.IG_TOKEN }) });
+  const user = await resolveInstagramUser();
+  const made = await jsonRequest(`${base}/${user.id}/media`, { method: 'POST', body: new URLSearchParams({ image_url: IMAGE_URL, caption, access_token: process.env.IG_TOKEN }) });
   let status = 'IN_PROGRESS';
   for (let attempt = 0; attempt < 10; attempt += 1) {
     if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -83,16 +99,36 @@ async function postInstagram(caption) {
     if (status === 'ERROR' || status === 'EXPIRED') throw new Error(`Instagram container ${status}`);
   }
   if (status !== 'FINISHED') throw new Error('Instagram container did not finish in time');
-  await jsonRequest(`${base}/${process.env.IG_USER_ID}/media_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.IG_TOKEN }) });
+  await jsonRequest(`${base}/${user.id}/media_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.IG_TOKEN }) });
 }
 
 async function main() {
+  const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
+  const check = process.argv.includes('--check') || process.env.CHECK === '1';
+  const channels = [
+    ['Threads', process.env.THREADS_TOKEN, fetchThreadsUser],
+    ['Instagram', process.env.IG_TOKEN, fetchInstagramUser],
+  ];
+  if (check) {
+    let failures = 0;
+    for (const [channel, token, resolve] of channels) {
+      if (!token) { console.log(`${channel}: スキップ（未設定）`); continue; }
+      try {
+        const user = await resolve();
+        console.log(`${channel}: 接続OK（@${user.username || 'unknown'}）`);
+      } catch (error) {
+        failures += 1;
+        console.log(`${channel}: 接続NG（${error.message}）`);
+      }
+    }
+    if (failures) process.exitCode = 1;
+    return;
+  }
   const params = new URLSearchParams({ select: 'id,title,venue,prefecture,starts_at,created_at,otaku_idol_groups(name)', publication_status: 'eq.published', is_demo: 'eq.false', starts_at: `gte.${new Date().toISOString()}`, order: 'starts_at.asc', limit: '1000' });
   const events = await jsonRequest(`${SUPABASE_URL}?${params}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   const posts = buildPosts(events);
-  const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
   let failures = 0;
-  for (const [channel, configured, texts, send] of [['Threads', process.env.THREADS_USER_ID && process.env.THREADS_TOKEN, posts.map((p) => p.threads), postThreads], ['Instagram', process.env.IG_USER_ID && process.env.IG_TOKEN, posts.map((p) => p.instagram), postInstagram]]) {
+  for (const [channel, configured, texts, send] of [['Threads', process.env.THREADS_TOKEN, posts.map((p) => p.threads), postThreads], ['Instagram', process.env.IG_TOKEN, posts.map((p) => p.instagram), postInstagram]]) {
     if (dryRun) {
       if (!texts.length) console.log(`${channel}: 本日の投稿はありません`);
       else texts.forEach((text, index) => console.log(`${channel}${configured ? '' : '（未設定・本番ではスキップ）'} ${index + 1} (${text.length}文字):\n${text}`));

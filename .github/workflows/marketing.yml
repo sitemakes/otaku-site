@@ -4,9 +4,13 @@ on:
     - cron: '7 10 * * *'
   workflow_dispatch:
     inputs:
-      dry_run:
-        type: boolean
-        default: true
+      mode:
+        type: choice
+        options:
+          - dry-run
+          - check
+          - post
+        default: dry-run
         required: true
 permissions:
   contents: read
@@ -23,7 +27,8 @@ jobs:
           node-version: 20
       - run: node scripts/marketing/post.mjs
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run' && '1' || '0' }}
+          CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'check' && '1' || '0' }}
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
