@@ -1,5 +1,6 @@
 node_modules/
 supabase/.temp/
 test-results/
+report/
 .claude/settings.local.json
 .claude/launch.json
