@@ -1,4 +1,5 @@
 import { appendFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 const SUPABASE_URL = 'https://pfyvsweuvdnpmvabfflh.supabase.co/rest/v1/otaku_events';
 const SUPABASE_KEY = 'sb_publishable_FJ9hNx9T4-sNV6Ypv94vJA_cCq5TxUp';
@@ -200,6 +201,33 @@ async function postXToIssue(posts) {
   }
 }
 
+async function announce(name, dryRun) {
+  if (!/^[A-Za-z0-9-]+$/.test(name)) throw new Error('ANNOUNCE は英数字とハイフンのみ指定できます');
+  const source = readFileSync(new URL(`./announcements/${name}.txt`, import.meta.url), 'utf8');
+  const post = {
+    threads: source.replaceAll('{LINK}', SITE_URL),
+    instagram: source.replaceAll('{LINK}', 'プロフィールのリンクからどうぞ'),
+  };
+  post.x = post.threads;
+  let failures = 0;
+  for (const [channel, configured, text, limit, send] of [['Threads', process.env.THREADS_TOKEN, post.threads, 500, postThreads], ['Instagram', process.env.IG_TOKEN, post.instagram, 2200, postInstagram]]) {
+    if (text.length > limit) { failures += 1; console.error(`${channel}: ${limit}文字を超えています（${text.length}文字）`); continue; }
+    if (dryRun) { console.log(`${channel}${configured ? '' : '（未設定・本番ではスキップ）'} 1 (${text.length}文字):\n${text}`); continue; }
+    if (!configured) { console.log(`${channel}: スキップ（未設定）`); continue; }
+    try { await send(text); }
+    catch (error) { failures += 1; console.error(`${channel} 1: ${error.message}`); }
+  }
+  if (dryRun) {
+    console.log(`X 1 (${xLength(post.x)} weighted chars):\n${post.x}\nhttps://x.com/intent/post?text=${encodeURIComponent(post.x)}`);
+    if (xLength(post.x) > 280) console.log('X: 280 weighted charsを超えているため Issue コメントを作成しません');
+  } else if (xLength(post.x) > 280) console.log(`X: 280 weighted charsを超えているため Issue コメントを作成しません（${xLength(post.x)} weighted chars）`);
+  else if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
+    try { await postXToIssue([post]); }
+    catch (error) { failures += 1; console.error(`X Issue: ${error.message}`); }
+  }
+  if (failures) process.exitCode = 1;
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
   const check = process.argv.includes('--check') || process.env.CHECK === '1';
@@ -221,6 +249,10 @@ async function main() {
       }
     }
     if (failures) process.exitCode = 1;
+    return;
+  }
+  if (process.env.ANNOUNCE) {
+    await announce(process.env.ANNOUNCE, dryRun);
     return;
   }
   let stats = null;
