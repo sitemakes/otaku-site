@@ -1,7 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 let buildPosts;
-test.before(async () => ({ buildPosts } = await import('../scripts/marketing/post.mjs')));
+let detectTemplate;
+let chooseTemplate;
+test.before(async () => ({ buildPosts, detectTemplate, chooseTemplate } = await import('../scripts/marketing/post.mjs')));
 const event = (n, start, created = '2026-10-10T00:00:00Z', group = '星空') => ({ title: `公演${n}`, venue: '渋谷会場', prefecture: '東京都', starts_at: start, created_at: created, otaku_idol_groups: { name: group } });
 test('新着は5件と残りを表示', () => { const posts = buildPosts(Array.from({ length: 6 }, (_, i) => event(i, `2026-10-20T10:00:00Z`, '2026-10-11T01:00:00Z')), new Date('2026-10-11T10:00:00Z')); assert.match(posts[0].threads, /ほか1件/); });
 test('新着なしは明日', () => { const posts = buildPosts([event(1, '2026-10-12T10:00:00Z')], new Date('2026-10-11T10:00:00Z')); assert.match(posts[0].threads, /明日の公演/); });
@@ -9,3 +11,6 @@ test('対象なしは0件', () => assert.equal(buildPosts([], new Date('2026-10-
 test('月曜は最大2件で今週を追加', () => { const posts = buildPosts([event(1, '2026-10-13T10:00:00Z'), event(2, '2026-10-14T10:00:00Z')], new Date('2026-10-12T00:00:00Z')); assert.equal(posts.length, 2); assert.match(posts[1].threads, /今週の公演/); });
 test('文字数とInstagram URL', () => { const posts = buildPosts([event(1, '2026-10-12T10:00:00Z')], new Date('2026-10-11T10:00:00Z')); assert.ok(posts.every((p) => p.threads.length <= 500 && p.instagram.length <= 2200)); assert.doesNotMatch(posts[0].instagram, /otaku-live-mvp\.vercel\.app/); });
 test('JSTの日付境界', () => { const posts = buildPosts([event(1, '2026-10-12T00:30:00Z', '2026-10-01T00:00:00Z')], new Date('2026-10-10T15:30:00Z')); assert.match(posts[0].threads, /明日の公演/); assert.match(posts[0].threads, /10\/12/); });
+test('テンプレートを判定する', () => { assert.equal(detectTemplate('🆕 新着公演を追加しました\n本文'), 'A'); assert.equal(detectTemplate('🆕 新着公演\n本文'), 'B'); for (const line of ['今週末の現場、一緒に行く人いますか？👀', '次の現場、もう決めた？🎤', '一人参戦が不安なら、同行募集を使ってみて🤝', '推しの公演、見逃してない？👀', '現場の予定、ここでまとめてチェック✅']) assert.equal(detectTemplate(line), 'C'); assert.equal(detectTemplate('不明'), null); });
+test('テンプレート選択は未使用を優先する', () => { assert.equal(chooseTemplate({ A: { posts: 2 }, B: { posts: 0 }, C: { posts: 0 } }, () => 0.9), 'B'); assert.equal(chooseTemplate({ A: { posts: 3, views: 10, engagements: 1 }, B: { posts: 3, views: 10, engagements: 5 }, C: { posts: 3, views: 10, engagements: 0 } }, () => 0.9), 'B'); assert.equal(chooseTemplate(null, () => 0), 'A'); });
+test('各テンプレートは上限内でグループ名を重ねない', () => { for (const template of ['A', 'B', 'C']) { const posts = buildPosts([event(1, '2026-10-12T10:00:00Z', '2026-10-01T00:00:00Z', '星空')], new Date('2026-10-11T10:00:00Z'), template); assert.ok(posts.every((p) => p.threads.length <= 500 && p.instagram.length <= 2200)); assert.doesNotMatch(posts[0].threads, /星空 星空/); } });
