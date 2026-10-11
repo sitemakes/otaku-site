@@ -15,6 +15,11 @@ for f in *.js api/*.js; do
     echo "NG: $f"; echo "$out" | head -n 8; fail=1; syn_ok=0
   fi
 done
+for f in scripts/marketing/*.mjs; do
+  if ! out="$(node --check "$f" 2>&1)"; then
+    echo "NG: $f"; echo "$out" | head -n 8; fail=1; syn_ok=0
+  fi
+done
 [ "$syn_ok" -eq 1 ] && echo "OK"
 
 section "単体テスト (node --test)"

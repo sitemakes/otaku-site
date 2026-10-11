@@ -1,0 +1,11 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+let buildPosts;
+test.before(async () => ({ buildPosts } = await import('../scripts/marketing/post.mjs')));
+const event = (n, start, created = '2026-10-10T00:00:00Z', group = '星空') => ({ title: `公演${n}`, venue: '渋谷会場', prefecture: '東京都', starts_at: start, created_at: created, otaku_idol_groups: { name: group } });
+test('新着は5件と残りを表示', () => { const posts = buildPosts(Array.from({ length: 6 }, (_, i) => event(i, `2026-10-20T10:00:00Z`, '2026-10-11T01:00:00Z')), new Date('2026-10-11T10:00:00Z')); assert.match(posts[0].threads, /ほか1件/); });
+test('新着なしは明日', () => { const posts = buildPosts([event(1, '2026-10-12T10:00:00Z')], new Date('2026-10-11T10:00:00Z')); assert.match(posts[0].threads, /明日の公演/); });
+test('対象なしは0件', () => assert.equal(buildPosts([], new Date('2026-10-11T10:00:00Z')).length, 0));
+test('月曜は最大2件で今週を追加', () => { const posts = buildPosts([event(1, '2026-10-13T10:00:00Z'), event(2, '2026-10-14T10:00:00Z')], new Date('2026-10-12T00:00:00Z')); assert.equal(posts.length, 2); assert.match(posts[1].threads, /今週の公演/); });
+test('文字数とInstagram URL', () => { const posts = buildPosts([event(1, '2026-10-12T10:00:00Z')], new Date('2026-10-11T10:00:00Z')); assert.ok(posts.every((p) => p.threads.length <= 500 && p.instagram.length <= 2200)); assert.doesNotMatch(posts[0].instagram, /otaku-live-mvp\.vercel\.app/); });
+test('JSTの日付境界', () => { const posts = buildPosts([event(1, '2026-10-12T00:30:00Z', '2026-10-01T00:00:00Z')], new Date('2026-10-10T15:30:00Z')); assert.match(posts[0].threads, /明日の公演/); assert.match(posts[0].threads, /10\/12/); });
