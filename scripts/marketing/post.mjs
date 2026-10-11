@@ -148,6 +148,23 @@ async function postThreads(text) {
   const base = 'https://graph.threads.net/v1.0';
   const user = await resolveThreadsUser();
   const made = await jsonRequest(`${base}/${user.id}/threads`, { method: 'POST', body: new URLSearchParams({ media_type: 'TEXT', text, access_token: process.env.THREADS_TOKEN }) });
+  let status = 'IN_PROGRESS';
+  let errorMessage = '';
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const result = await jsonRequest(`${base}/${made.id}?fields=status,error_message&access_token=${encodeURIComponent(process.env.THREADS_TOKEN)}`, { method: 'GET' });
+    status = result.status;
+    errorMessage = result.error_message || '';
+    if (status === 'FINISHED') break;
+    if (status === 'ERROR' || status === 'EXPIRED') {
+      console.error(`Threads container ${status}: ${errorMessage || 'unknown error'}`);
+      throw new Error(`Threads container ${status}`);
+    }
+  }
+  if (status !== 'FINISHED') {
+    console.error(`Threads container did not finish in time: ${errorMessage || 'unknown error'}`);
+    throw new Error('Threads container did not finish in time');
+  }
   await jsonRequest(`${base}/${user.id}/threads_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.THREADS_TOKEN }) });
 }
 async function postInstagram(caption) {
