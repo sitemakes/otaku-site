@@ -1,0 +1,62 @@
+name: Weekly Growth Report
+
+on:
+  schedule:
+    - cron: '17 0 * * 1' # 毎週月曜 09:17 JST（00:17 UTC）
+  workflow_dispatch: {}
+
+concurrency:
+  group: weekly-growth-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Collect growth data
+        env:
+          REPORT_KEY: ${{ secrets.REPORT_KEY }}
+          THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+        run: node scripts/marketing/report-data.mjs
+
+      - name: Show collected data
+        run: cat report/report.json
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 25
+            --allowedTools "Read,Glob,Grep,Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh label create:*)"
+          prompt: |
+            あなたは OTAKU LIVE の集客担当です。ファイル・コード・DB は一切変更しないでください。
+            `report/report.json`、`docs/launch-priority.md`、`docs/brand/profile.md`、投稿の書き方が書かれた `scripts/marketing/post.mjs` を読んでください。
+
+            `growth-report` ラベルが無ければ `gh label create growth-report --color 7C3AED` で作成し、ラベルを付けた Issue を1件作成してください。
+            タイトルは「週次集客レポート（YYYY-MM-DD）」とし、YYYY-MM-DD は実行日の日本時間の日付にしてください。
+            同じ日付の Issue が既にないか `gh issue list` で確認し、既にあれば新しく作らず終了してください。
+
+            Issue 本文は日本語で、次の順にまとめてください。
+            1. 今週の数字
+               - サイト：閲覧回数、ページ別上位、新規登録、参戦予定、同行募集、DM、掲示板、グッズ。それぞれ前週比も示す。
+               - SNS：投稿数、表示、反応率。それぞれ前週比も示す。
+            2. 伸びた投稿・伸びなかった投稿：投稿へのリンクを付け、理由を数字に基づいて推測する。
+            3. テンプレート別の成績。
+            4. 改善案を、すぐできる順に3つ。各案に「何をするか」「なぜ（数字の根拠）」「期待する効果」「作業量の目安」を書く。
+            5. データが取れなかった項目。
+
+            数字が少ない初期は、少ないこと自体を前提に、集客の初動として効く案を出してください。数字は絶対に捏造せず、取得できない値は「取得できず」と明記してください。
