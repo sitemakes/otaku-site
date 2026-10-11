@@ -9,6 +9,7 @@ on:
         options:
           - dry-run
           - check
+          - report
           - post
         default: dry-run
         required: true
@@ -29,6 +30,7 @@ jobs:
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run' && '1' || '0' }}
           CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'check' && '1' || '0' }}
+          REPORT: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'report' && '1' || '0' }}
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}

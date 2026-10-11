@@ -4,6 +4,8 @@ const SITE_URL = 'https://otaku-live-mvp.vercel.app/';
 const IMAGE_URL = `${SITE_URL}og-default.jpg`;
 const TAGS = '#OTAKULIVE #アイドル';
 const JST = 'Asia/Tokyo';
+const TEMPLATES = { A: 'A', B: 'B', C: 'C' };
+const CALLS = ['今週末の現場、一緒に行く人いますか？👀', '次の現場、もう決めた？🎤', '一人参戦が不安なら、同行募集を使ってみて🤝', '推しの公演、見逃してない？👀', '現場の予定、ここでまとめてチェック✅'];
 
 const jstParts = (date) => Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
   timeZone: JST, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
@@ -13,32 +15,44 @@ const dayKey = (date) => { const p = jstParts(date); return `${p.year}-${p.month
 const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
 const dateLabel = (date) => { const p = jstParts(new Date(date)); return `${Number(p.month)}/${Number(p.day)}(${'SunMonTueWedThuFriSat'.indexOf(p.weekday) / 3 >= 0 ? ['日','月','火','水','木','金','土']['SunMonTueWedThuFriSat'.indexOf(p.weekday) / 3] : p.weekday}) ${p.hour}:${p.minute}`; };
 const groupName = (event) => event.otaku_idol_groups?.name || 'グループ名未設定';
-const eventLine = (event) => `・${groupName(event)} ${event.title} ${dateLabel(event.starts_at)} ${event.venue || '会場未定'}${event.prefecture ? `（${event.prefecture}）` : ''}`;
+const eventTitle = (event) => event.title?.startsWith(groupName(event)) ? event.title : `${groupName(event)} ${event.title}`;
+const eventLine = (event) => `・${event.title} ${dateLabel(event.starts_at)} ${event.prefecture || ''}`.trim();
+const groupedLine = (event) => `【${groupName(event)}】${dateLabel(event.starts_at)} ${event.venue || '会場未定'}`;
 const finish = (headline, lines, instagram) => `${headline}\n${lines.join('\n')}\n${instagram ? 'プロフィールのリンクから見られます' : SITE_URL}\n${TAGS}`;
 
-function fitPost(headline, events, instagram, limit, suffix = '') {
+export function detectTemplate(text) {
+  const first = String(text || '').split(/\r?\n/, 1)[0];
+  if (first === '🆕 新着公演を追加しました' || first === '📅 明日の公演' || first.startsWith('🎤 今週の公演（')) return 'A';
+  if (first === '🆕 新着公演' || first === '📅 明日の公演【グループ別】' || first === '🎤 今週の公演【グループ別】') return 'B';
+  if (CALLS.includes(first)) return 'C';
+  return null;
+}
+
+const callLine = (now, kind, count, groups) => `${CALLS[Math.floor(Number(jstParts(now).day) % CALLS.length)]}\n${kind === 'new' ? `${groups.slice(0, 3).join('、')}など、新しく${count}公演を追加しました。` : `${kind === 'tomorrow' ? '明日' : '今週'}は${count}公演`}`;
+
+function fitPost(headline, events, instagram, limit, suffix = '', line = eventLine) {
   let count = Math.min(5, events.length);
   while (count >= 0) {
     const rest = events.length > count ? `\nほか${events.length - count}件` : '';
-    const text = finish(headline, events.slice(0, count).map(eventLine).concat(rest ? [rest.trim()] : []), instagram) + suffix;
+    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), instagram) + suffix;
     if (text.length <= limit) return text;
     count -= 1;
   }
   return finish(headline, [], instagram) + suffix;
 }
 
-export function buildPosts(events, now = new Date()) {
+export function buildPosts(events, now = new Date(), template = 'A') {
   const current = new Date(now);
   const currentJst = jstParts(current);
   const sorted = [...events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
   const posts = [];
   const fresh = sorted.filter((event) => current - new Date(event.created_at) >= 0 && current - new Date(event.created_at) <= 86400000);
   if (fresh.length) {
-    posts.push({ kind: 'new', headline: '🆕 新着公演を追加しました', events: fresh });
+    posts.push({ kind: 'new', headline: template === 'A' ? '🆕 新着公演を追加しました' : template === 'B' ? '🆕 新着公演' : callLine(current, 'new', fresh.length, fresh.map(groupName)), events: fresh });
   } else {
     const tomorrow = dayKey(addDays(current, 1));
     const next = sorted.filter((event) => dayKey(new Date(event.starts_at)) === tomorrow);
-    if (next.length) posts.push({ kind: 'tomorrow', headline: '📅 明日の公演', events: next });
+    if (next.length) posts.push({ kind: 'tomorrow', headline: template === 'A' ? '📅 明日の公演' : template === 'B' ? '📅 明日の公演【グループ別】' : callLine(current, 'tomorrow', next.length, []), events: next });
   }
   if (currentJst.weekday === 'Mon') {
     const weekEvents = sorted.filter((event) => {
@@ -47,17 +61,35 @@ export function buildPosts(events, now = new Date()) {
     const counts = new Map();
     for (const event of weekEvents) counts.set(groupName(event), (counts.get(groupName(event)) || 0) + 1);
     const groups = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    if (groups.length) posts.push({ kind: 'week', headline: `🎤 今週の公演（${Number(currentJst.month)}/${Number(currentJst.day)}〜${Number(jstParts(addDays(current, 6)).month)}/${Number(jstParts(addDays(current, 6)).day)}）`, groups });
+    if (groups.length) posts.push({ kind: 'week', headline: template === 'A' ? `🎤 今週の公演（${Number(currentJst.month)}/${Number(currentJst.day)}〜${Number(jstParts(addDays(current, 6)).month)}/${Number(jstParts(addDays(current, 6)).day)}）` : template === 'B' ? '🎤 今週の公演【グループ別】' : callLine(current, 'week', weekEvents.length, []), groups, events: weekEvents });
   }
   const limited = posts.slice(0, 2);
   return limited.map((post) => {
     if (post.kind === 'week') {
-      const lines = post.groups.slice(0, 8).map(([name, count]) => `・${name} ${count}公演`);
+      const lines = template === 'B' ? post.groups.slice(0, 8).map(([name, count]) => `【${name}】${count}公演`) : post.groups.slice(0, 8).map(([name, count]) => `・${name} ${count}公演`);
       if (post.groups.length > 8) lines.push(`・ほか${post.groups.length - 8}グループ`);
+      if (template === 'C') return { threads: finish(post.headline, [], false).replace(post.headline, post.headline), instagram: finish(post.headline, [], true) };
       return { threads: finish(post.headline, lines, false), instagram: finish(post.headline, lines, true) };
     }
-    return { threads: fitPost(post.headline, post.events, false, 500), instagram: fitPost(post.headline, post.events, true, 2200) };
+    return { threads: fitPost(post.headline, post.events, false, 500, '', template === 'B' ? groupedLine : eventLine), instagram: fitPost(post.headline, post.events, true, 2200, '', template === 'B' ? groupedLine : eventLine) };
   });
+}
+
+export function chooseTemplate(stats, random = Math.random) {
+  const names = ['A', 'B', 'C'];
+  if (!stats) return names[Math.floor(random() * names.length)];
+  const under = names.filter((name) => (stats[name]?.posts || 0) < 3);
+  if (under.length) return under.sort((a, b) => (stats[a]?.posts || 0) - (stats[b]?.posts || 0) || names.indexOf(a) - names.indexOf(b))[0];
+  if (random() < 0.2) return names[Math.floor(random() * names.length)];
+  return names.sort((a, b) => ((stats[b]?.engagements || 0) / (stats[b]?.views || 1)) - ((stats[a]?.engagements || 0) / (stats[a]?.views || 1)))[0];
+}
+
+export async function fetchThreadsStats(token, userId, now = new Date()) {
+  const since = new Date(now.getTime() - 30 * 86400000);
+  const list = await jsonRequest(`https://graph.threads.net/v1.0/${userId}/threads?fields=id,text,timestamp&limit=100&access_token=${encodeURIComponent(token)}`, { method: 'GET' });
+  const stats = { A: { posts: 0, views: 0, engagements: 0 }, B: { posts: 0, views: 0, engagements: 0 }, C: { posts: 0, views: 0, engagements: 0 } };
+  for (const post of list.data || []) { if (new Date(post.timestamp) < since) continue; const kind = detectTemplate(post.text); if (!kind) continue; const insight = await jsonRequest(`https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${encodeURIComponent(token)}`, { method: 'GET' }); const values = Object.fromEntries((insight.data || []).map((item) => [item.name, Number(item.values?.[0]?.value || item.value || 0)])); stats[kind].posts += 1; stats[kind].views += values.views || 0; stats[kind].engagements += (values.likes || 0) + (values.replies || 0) + (values.reposts || 0) + (values.quotes || 0); }
+  return stats;
 }
 
 async function jsonRequest(url, options) {
@@ -105,6 +137,7 @@ async function postInstagram(caption) {
 async function main() {
   const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
   const check = process.argv.includes('--check') || process.env.CHECK === '1';
+  const reportOnly = process.env.REPORT === '1' || process.argv.includes('--report');
   const channels = [
     ['Threads', process.env.THREADS_TOKEN, fetchThreadsUser],
     ['Instagram', process.env.IG_TOKEN, fetchInstagramUser],
@@ -124,9 +157,22 @@ async function main() {
     if (failures) process.exitCode = 1;
     return;
   }
+  let stats = null;
+  if (process.env.THREADS_TOKEN) {
+    try { stats = await fetchThreadsStats(process.env.THREADS_TOKEN, process.env.THREADS_USER_ID || (await resolveThreadsUser()).id); }
+    catch (error) { console.log(`Threads 成績取得失敗: ${error.message}`); }
+  } else if (reportOnly) { console.log('Threads 未設定のため成績なし'); return; }
+  if (reportOnly) {
+    if (!stats) { console.log('Threads 成績なし'); return; }
+    const table = ['| テンプレート | 投稿数 | 平均表示 | 平均反応率 |', '|---|---:|---:|---:|', ...['A', 'B', 'C'].map((name) => { const s = stats[name]; const rate = s.views ? s.engagements / s.views : 0; return `| ${name} | ${s.posts} | ${(s.views / (s.posts || 1)).toFixed(1)} | ${(rate * 100).toFixed(2)}% |`; })].join('\n');
+    if (process.env.GITHUB_STEP_SUMMARY) require('node:fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`); else console.log(table);
+    return;
+  }
   const params = new URLSearchParams({ select: 'id,title,venue,prefecture,starts_at,created_at,otaku_idol_groups(name)', publication_status: 'eq.published', is_demo: 'eq.false', starts_at: `gte.${new Date().toISOString()}`, order: 'starts_at.asc', limit: '1000' });
   const events = await jsonRequest(`${SUPABASE_URL}?${params}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  const posts = buildPosts(events);
+  const template = process.env.THREADS_TOKEN ? chooseTemplate(stats) : ['A', 'B', 'C'][Number(jstParts(new Date()).day) % 3];
+  console.log(`テンプレート: ${template}${dryRun && stats ? ` / 成績: ${JSON.stringify(stats)}` : ''}`);
+  const posts = buildPosts(events, new Date(), template);
   let failures = 0;
   for (const [channel, configured, texts, send] of [['Threads', process.env.THREADS_TOKEN, posts.map((p) => p.threads), postThreads], ['Instagram', process.env.IG_TOKEN, posts.map((p) => p.instagram), postInstagram]]) {
     if (dryRun) {
