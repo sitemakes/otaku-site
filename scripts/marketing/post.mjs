@@ -20,6 +20,18 @@ const eventLine = (event) => `・${event.title} ${dateLabel(event.starts_at)} ${
 const groupedLine = (event) => `【${groupName(event)}】${dateLabel(event.starts_at)} ${event.venue || '会場未定'}`;
 const finish = (headline, lines, instagram) => `${headline}\n${lines.join('\n')}\n${instagram ? 'プロフィールのリンクから見られます' : SITE_URL}\n${TAGS}`;
 
+export function xLength(text) {
+  let length = 0;
+  let last = 0;
+  for (const match of String(text).matchAll(/https?:\/\/[^\s]+/g)) {
+    for (const char of String(text).slice(last, match.index)) length += /[\x00-\x7f]/.test(char) ? 1 : 2;
+    length += 23;
+    last = match.index + match[0].length;
+  }
+  for (const char of String(text).slice(last)) length += /[\x00-\x7f]/.test(char) ? 1 : 2;
+  return length;
+}
+
 export function detectTemplate(text) {
   const first = String(text || '').split(/\r?\n/, 1)[0];
   if (first === '🆕 新着公演を追加しました' || first === '📅 明日の公演' || first.startsWith('🎤 今週の公演（')) return 'A';
@@ -39,6 +51,25 @@ function fitPost(headline, events, instagram, limit, suffix = '', line = eventLi
     count -= 1;
   }
   return finish(headline, [], instagram) + suffix;
+}
+
+function fitX(headline, events, line = eventLine) {
+  let count = Math.min(5, events.length);
+  while (count >= 0) {
+    const rest = events.length > count ? `\nほか${events.length - count}件` : '';
+    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), false);
+    if (xLength(text) <= 280) return text;
+    count -= 1;
+  }
+  return finish(headline, [], false);
+}
+
+function fitXLines(headline, lines) {
+  for (let count = lines.length; count >= 0; count -= 1) {
+    const text = finish(headline, lines.slice(0, count), false);
+    if (xLength(text) <= 280) return text;
+  }
+  return finish(headline, [], false);
 }
 
 export function buildPosts(events, now = new Date(), template = 'A') {
@@ -68,10 +99,10 @@ export function buildPosts(events, now = new Date(), template = 'A') {
     if (post.kind === 'week') {
       const lines = template === 'B' ? post.groups.slice(0, 8).map(([name, count]) => `【${name}】${count}公演`) : post.groups.slice(0, 8).map(([name, count]) => `・${name} ${count}公演`);
       if (post.groups.length > 8) lines.push(`・ほか${post.groups.length - 8}グループ`);
-      if (template === 'C') return { threads: finish(post.headline, [], false).replace(post.headline, post.headline), instagram: finish(post.headline, [], true) };
-      return { threads: finish(post.headline, lines, false), instagram: finish(post.headline, lines, true) };
+      if (template === 'C') return { threads: finish(post.headline, [], false), instagram: finish(post.headline, [], true), x: finish(post.headline, [], false) };
+      return { threads: finish(post.headline, lines, false), instagram: finish(post.headline, lines, true), x: fitXLines(post.headline, lines) };
     }
-    return { threads: fitPost(post.headline, post.events, false, 500, '', template === 'B' ? groupedLine : eventLine), instagram: fitPost(post.headline, post.events, true, 2200, '', template === 'B' ? groupedLine : eventLine) };
+    return { threads: fitPost(post.headline, post.events, false, 500, '', template === 'B' ? groupedLine : eventLine), instagram: fitPost(post.headline, post.events, true, 2200, '', template === 'B' ? groupedLine : eventLine), x: fitX(post.headline, post.events, template === 'B' ? groupedLine : eventLine) };
   });
 }
 
@@ -134,6 +165,22 @@ async function postInstagram(caption) {
   await jsonRequest(`${base}/${user.id}/media_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: made.id, access_token: process.env.IG_TOKEN }) });
 }
 
+async function postXToIssue(posts) {
+  const headers = { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  const base = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}`;
+  const issues = await jsonRequest(`${base}/issues?labels=x-post&state=open&per_page=1`, { headers });
+  let issue = issues[0];
+  if (!issue) {
+    const payload = { title: 'X 投稿用の文面', labels: ['x-post'], body: '毎日の X 用の文面がコメントで届きます。リンクを押すと投稿画面が開くので、内容を確認して「ポスト」を押してください。' };
+    try { issue = await jsonRequest(`${base}/issues`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
+    catch { delete payload.labels; issue = await jsonRequest(`${base}/issues`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
+  }
+  for (const post of posts) {
+    const link = `https://x.com/intent/post?text=${encodeURIComponent(post.x)}`;
+    await jsonRequest(`${base}/issues/${issue.number}/comments`, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ body: `**X に投稿する** → ${link}\n\n\`\`\`\n${post.x}\n\`\`\`` }) });
+  }
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
   const check = process.argv.includes('--check') || process.env.CHECK === '1';
@@ -185,6 +232,12 @@ async function main() {
       try { await send(text); }
       catch (error) { failures += 1; console.error(`${channel} ${index + 1}: ${error.message}`); }
     }
+  }
+  const xTexts = posts.map((post) => post.x);
+  if (dryRun) xTexts.forEach((text, index) => console.log(`X ${index + 1} (${xLength(text)} weighted chars):\n${text}\nhttps://x.com/intent/post?text=${encodeURIComponent(text)}`));
+  else if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
+    try { await postXToIssue(posts); }
+    catch (error) { failures += 1; console.error(`X Issue: ${error.message}`); }
   }
   if (failures) process.exitCode = 1;
 }
