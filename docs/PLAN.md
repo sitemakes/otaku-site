@@ -26,7 +26,7 @@
 3. **運営者の作業**：Google Search Console にサイトを登録し、サイトマップを送信（手順は Claude が案内）。
 
 ### B. SNS 自動投稿の仕組み
-**B1〜B3・B5 完了（2026-10-11、PR #40）**：GitHub Actions の手動 dry-run 成功（Threads・Instagram の文面を確認）。secrets 未登録のため本番投稿はまだ。B4（トークン更新）はトークン取得後に実装。
+**B1〜B3・B5 完了（2026-10-11、PR #40）**：GitHub Actions の手動 dry-run 成功（Threads・Instagram の文面を確認）。secrets 未登録のため本番投稿はまだ。B4（トークン更新）も完了（refresh-tokens.yml、毎週月曜 12:23 JST、失敗時は Issue）。
 1. `scripts/marketing/post.mjs`（Node 20、依存なし、`fetch` のみ）：
    - 公開 REST から公演を取得し、投稿文を作る。
      - **毎日**：直近24時間に追加された公開済み・今後の公演があれば「新着公演」1投稿（最大5件をまとめ、残りは「ほか○件」）。無ければ「明日の公演」1投稿（無ければ投稿しない）。
