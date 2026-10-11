@@ -1,0 +1,43 @@
+name: Refresh SNS tokens
+
+on:
+  schedule:
+    - cron: '23 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: refresh-sns-tokens
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+      - name: Refresh tokens
+        env:
+          THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          SECRETS_PAT: ${{ secrets.SECRETS_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/marketing/refresh-tokens.mjs
+      - name: Create failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title='SNS トークンの延長に失敗しました'
+          if [ "$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title $title" --json title --jq "[.[] | select(.title == \"$title\")] | length")" -eq 0 ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body "実行ログ: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+Meta の開発者画面でトークンを作り直して Secrets に登録してください"
+          fi
