@@ -131,6 +131,25 @@ async function jsonRequest(url, options) {
   if (!response.ok) { let message = `HTTP ${response.status}`; try { message += `: ${(await response.json()).error?.message || 'request failed'}`; } catch {} throw new Error(message); }
   return response.json();
 }
+async function alreadyPostedToday() {
+  let url;
+  if (process.env.THREADS_TOKEN) {
+    url = `https://graph.threads.net/v1.0/me/threads?fields=id,timestamp&limit=1&access_token=${encodeURIComponent(process.env.THREADS_TOKEN)}`;
+  } else if (process.env.IG_TOKEN) {
+    url = `https://graph.instagram.com/v22.0/me/media?fields=id,timestamp&limit=1&access_token=${encodeURIComponent(process.env.IG_TOKEN)}`;
+  } else {
+    console.log('投稿済みか確認できないため投稿を続けます（トークン未設定）');
+    return false;
+  }
+  try {
+    const result = await jsonRequest(url, { method: 'GET' });
+    const timestamp = result.data?.[0]?.timestamp;
+    return Boolean(timestamp && dayKey(new Date(timestamp)) === dayKey(new Date()));
+  } catch (error) {
+    console.log(`投稿済みか確認できないため投稿を続けます: ${error.message}`);
+    return false;
+  }
+}
 async function fetchThreadsUser() {
   const result = await jsonRequest(`https://graph.threads.net/v1.0/me?fields=id,username&access_token=${encodeURIComponent(process.env.THREADS_TOKEN)}`, { method: 'GET' });
   return { id: result.id, username: result.username };
@@ -253,6 +272,10 @@ async function main() {
   }
   if (process.env.ANNOUNCE) {
     await announce(process.env.ANNOUNCE, dryRun);
+    return;
+  }
+  if (process.env.GITHUB_EVENT_NAME === 'schedule' && !dryRun && !reportOnly && await alreadyPostedToday()) {
+    console.log('本日分は投稿済みのためスキップ');
     return;
   }
   let stats = null;
