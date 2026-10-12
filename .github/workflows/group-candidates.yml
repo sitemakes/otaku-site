@@ -1,0 +1,55 @@
+name: Weekly Group Candidates
+
+on:
+  schedule:
+    - cron: '29 2 * * 4' # 毎週木曜 11:29 JST（02:29 UTC）
+  workflow_dispatch:
+    inputs:
+      count:
+        description: '候補に挙げるグループ数'
+        required: false
+        default: 10
+        type: number
+
+concurrency:
+  group: weekly-group-candidates
+  cancel-in-progress: true
+
+jobs:
+  candidates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Collect registered groups
+        env:
+          MODE: groups
+        run: node scripts/marketing/event-check-data.mjs
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 80
+            --allowedTools "Read,WebFetch,WebSearch,Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh label create:*)"
+          prompt: |
+            あなたは OTAKU LIVE の掲載グループ担当です。ファイル・コード・DB は一切変更しないでください。
+            `report/registered-groups.json` にない、現在活動中の人気アイドルグループを ${{ inputs.count || 10 }} 件選んでください。国内と K-POP を半々とし、K-POP は日本公式サイトがあるグループを優先してください。`gh issue list --label group-candidates --state all` で過去の Issue を確認し、過去に候補として挙げたグループは除外してください。
+
+            各グループの公式サイトで、正式名称、現メンバー（公式のメンバー一覧のみ）、今後の日本国内の公演を確認してください。公演は開演時刻と会場が公式に書かれたものだけにし、劇場の定期公演、握手会・特典会・リリースイベント、オンライン配信は除外してください。出典は公式サイトだけを使い、情報を推測で埋めないでください。読み・略称（`search_aliases`）は一般的な呼び方で構いません。
+
+            `group-candidates` ラベルが無ければ `gh label create group-candidates --color 5319E7` で作成し、ラベルを付けて Issue「新グループの追加候補（YYYY-MM-DD）」を作成してください。YYYY-MM-DD は実行日の日本時間の日付です。先に同じ日付の Issue がないか確認し、既にあれば新しく作らず終了してください。
+
+            Issue 本文には、グループごとの要約として正式名称・メンバー数・公演数・公式サイトを記載してください。最後に、次の形式の JSON コードブロックを付けてください。
+            `{"groups":[{"name":"","slug":"","source_url":"","search_aliases":"","members":[{"name":""}],"members_source_url":"","events":[{"title":"","venue":"","prefecture":"","city":"","starts_at":"YYYY-MM-DDTHH:MM","source_url":""}]}],"skipped":[{"group":"","reason":""}]}`
