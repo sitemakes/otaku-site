@@ -41,7 +41,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --max-turns 60
-            --allowedTools "Read,WebFetch,Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh label create:*)"
+            --allowedTools "Read,Write,WebFetch,Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh label create:*)"
           prompt: |
             あなたは OTAKU LIVE の公演情報担当です。ファイル・コード・DB は一切変更しないでください。
             `report/event-check.json` を読み、各グループの `source_url` から辿れる公式サイトのスケジュール・ライブ・ニュースのページを WebFetch で確認してください。
@@ -49,7 +49,9 @@ jobs:
             2026年以降かつ今日以降に日本国内で開催され、開演時刻と会場が公式ページに明記されている公演のうち、`registered_events` に同じ日時・会場の公演がないものだけを候補にしてください。劇場の定期公演、握手会・特典会・リリースイベント、オンライン配信は除外してください。チケットサイト・ニュースサイト・ファンサイトは出典にせず、情報を推測で埋めないでください。
 
             候補が1件以上ある場合だけ、`event-candidates` ラベルが無ければ `gh label create event-candidates --color 1D76DB` で作成し、ラベルを付けて Issue「公演の追加候補（YYYY-MM-DD）」を作成してください。YYYY-MM-DD は実行日の日本時間の日付です。先に `gh issue list --label event-candidates --state all` で同じ日付の Issue がないか確認し、既にあれば新しく作らず終了してください。
+            Issue 本文はまず Write ツールで report/issue-body.md に書き、Bash では `gh issue create --title "<タイトル>" --label <ラベル> --body-file report/issue-body.md` の1コマンドだけを実行してください。パイプ・ヒアドキュメント・&&・; は使わないでください。ラベル作成も `gh label create <名前> --color <色> --force` の単独コマンドで行ってください。
 
             Issue 本文には、グループごとの候補を「公演名・日時・会場・都道府県・出典 URL」の表でまとめ、確認できなかったグループは理由を一言で記載してください。最後に、次の形式の JSON コードブロックを付けてください。
             `{"groups":[{"slug":"...","events":[{"title":"...","venue":"...","prefecture":"...","city":"","starts_at":"YYYY-MM-DDTHH:MM","source_url":"https://..."}]}]}`
             候補が0件なら Issue は作成しないでください。
+            候補が0件でも、最後に確認したグループ名と結果（候補なし／確認できず＋理由）を短く出力してください。
