@@ -16,8 +16,10 @@ test('Japan date conversion is independent of browser timezone and rejects rollo
   assert.throws(() => c.jst('2026-02-30T18:00'));
 });
 test('publication needs evidence, drafts do not', () => {
-  const group = { name:' Real Group ',slug:'real-group',publication_status:'draft' };
+  const group = { name:' Real Group ',slug:'real-group',search_aliases:' alias one ',publication_status:'draft' };
   assert.equal(c.payload('groups',group).name,'Real Group');
+  assert.equal(c.payload('groups',group).search_aliases,'alias one');
+  assert.throws(() => c.payload('groups',{...group,search_aliases:'a'.repeat(501)}));
   assert.throws(() => c.payload('groups',{...group,publication_status:'published'}));
   assert.equal(c.payload('groups',{...group,publication_status:'published',source_url:'https://example.com/',source_kind:'official',source_checked_at:'2026-01-01T00:00:00Z'}).publication_status,'published');
 });
