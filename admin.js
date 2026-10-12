@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const tables = { groups: 'otaku_idol_groups', idols: 'otaku_idols', events: 'otaku_events' };
   const labels = { draft: '下書き', published: '公開', archived: '非公開・保管' };
-  const keys = ['name','slug','group_id','title','venue','prefecture','city','starts_at','ends_at','event_status','status_note','source_url','source_kind','publication_status'];
+  const keys = ['name','slug','search_aliases','group_id','title','venue','prefecture','city','starts_at','ends_at','event_status','status_note','source_url','source_kind','publication_status'];
   let editing = null, records = [], busy = false, generation = 0;
   function resetEditor() {
     editing = null; $('editor').reset(); $('lastChecked').textContent = '';
@@ -65,7 +65,7 @@
     setBusy(true); resetEditor(); $('message').textContent = '';
     const kind = $('kind').value;
     if (kind === 'events') ensureEventStatusFields();
-    $('nameField').hidden = kind === 'events'; $('slugField').hidden = kind !== 'groups';
+    $('nameField').hidden = kind === 'events'; $('slugField').hidden = kind !== 'groups'; $('searchAliasesField').hidden = kind !== 'groups';
     $('groupField').hidden = kind === 'groups'; $('eventFields').hidden = kind !== 'events';
     for (const key of ['name','slug','group_id','title','venue','starts_at']) $(key).required = key === 'name' ? kind !== 'events' : key === 'slug' ? kind === 'groups' : key === 'group_id' ? kind !== 'groups' : kind === 'events';
     try { await groups(); await load(); } catch (error) { $('message').textContent = OtakuCatalog.errorMessage(error); }

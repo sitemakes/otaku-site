@@ -64,6 +64,8 @@
     if (kind === 'groups') {
       result.slug = String(values.slug || '').trim();
       if (!/^[a-z0-9-]{2,80}$/.test(result.slug)) throw new Error('識別名は半角英小文字・数字・ハイフンの2〜80文字にしてください。');
+      result.search_aliases = String(values.search_aliases || '').trim();
+      if (result.search_aliases.length > 500) throw new Error('検索用の読み・別名は500文字以内にしてください。');
     } else {
       result.group_id = values.group_id;
       if (!result.group_id) throw new Error('グループを選択してください。');
