@@ -131,7 +131,7 @@ async function jsonRequest(url, options) {
   if (!response.ok) { let message = `HTTP ${response.status}`; try { message += `: ${(await response.json()).error?.message || 'request failed'}`; } catch {} throw new Error(message); }
   return response.json();
 }
-async function alreadyPostedToday() {
+async function alreadyPostedRecently() {
   let url;
   if (process.env.THREADS_TOKEN) {
     url = `https://graph.threads.net/v1.0/me/threads?fields=id,timestamp&limit=1&access_token=${encodeURIComponent(process.env.THREADS_TOKEN)}`;
@@ -144,7 +144,8 @@ async function alreadyPostedToday() {
   try {
     const result = await jsonRequest(url, { method: 'GET' });
     const timestamp = result.data?.[0]?.timestamp;
-    return Boolean(timestamp && dayKey(new Date(timestamp)) === dayKey(new Date()));
+    const elapsed = Date.now() - new Date(timestamp).getTime();
+    return Boolean(timestamp && elapsed >= 0 && elapsed <= 20 * 60 * 60 * 1000);
   } catch (error) {
     console.log(`投稿済みか確認できないため投稿を続けます: ${error.message}`);
     return false;
@@ -274,8 +275,8 @@ async function main() {
     await announce(process.env.ANNOUNCE, dryRun);
     return;
   }
-  if (process.env.GITHUB_EVENT_NAME === 'schedule' && !dryRun && !reportOnly && await alreadyPostedToday()) {
-    console.log('本日分は投稿済みのためスキップ');
+  if ((process.env.GITHUB_EVENT_NAME === 'schedule' || process.env.AUTO_POST === '1') && !dryRun && !reportOnly && await alreadyPostedRecently()) {
+    console.log('直近20時間以内に投稿済みのためスキップ');
     return;
   }
   let stats = null;
