@@ -13,6 +13,7 @@ on:
           - check
           - report
           - post
+          - auto
           - announce
         default: dry-run
         required: true
@@ -40,6 +41,7 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run' && '1' || '0' }}
           CHECK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'check' && '1' || '0' }}
           REPORT: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'report' && '1' || '0' }}
+          AUTO_POST: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'auto' && '1' || '0' }}
           ANNOUNCE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'announce' && inputs.announce_name || '' }}
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
