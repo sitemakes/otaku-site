@@ -95,7 +95,7 @@ const weekendKeys = (now) => {
   return new Set([dayKey(addDays(now, saturdayOffset)), dayKey(addDays(now, saturdayOffset + 1))]);
 };
 
-export function buildPosts(events, now = new Date(), template = 'A', groups = []) {
+export function buildPosts(events, now = new Date(), template = 'A', groups = [], includeWeekly = true) {
   const current = new Date(now);
   const currentJst = jstParts(current);
   const sorted = [...events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
@@ -144,7 +144,7 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
     }
     if (!posts.length) {
       console.log(`${template}: 該当なしのため A`);
-      return buildPosts(events, current, 'A', groups);
+      return buildPosts(events, current, 'A', groups, includeWeekly);
     }
   } else if (fresh.length) {
     posts.push({ kind: 'new', headline: template === 'A' ? '🆕 新着公演を追加しました' : template === 'B' ? '🆕 新着公演' : callLine(current, 'new', fresh.length, fresh.map(groupName)), events: fresh });
@@ -153,7 +153,7 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
     const next = sorted.filter((event) => dayKey(new Date(event.starts_at)) === tomorrow);
     if (next.length) posts.push({ kind: 'tomorrow', headline: template === 'A' ? '📅 明日の公演' : template === 'B' ? '📅 明日の公演【グループ別】' : callLine(current, 'tomorrow', next.length, []), events: next });
   }
-  if (currentJst.weekday === 'Mon') {
+  if (includeWeekly && currentJst.weekday === 'Mon') {
     const weekEvents = sorted.filter((event) => {
       const start = new Date(event.starts_at); return start >= current && start < addDays(current, 7);
     });
@@ -211,7 +211,7 @@ async function alreadyPostedRecently() {
     const result = await jsonRequest(url, { method: 'GET' });
     const timestamp = result.data?.[0]?.timestamp;
     const elapsed = Date.now() - new Date(timestamp).getTime();
-    return Boolean(timestamp && elapsed >= 0 && elapsed <= 20 * 60 * 60 * 1000);
+    return Boolean(timestamp && elapsed >= 0 && elapsed <= 5 * 60 * 60 * 1000);
   } catch (error) {
     console.log(`投稿済みか確認できないため投稿を続けます: ${error.message}`);
     return false;
@@ -342,7 +342,7 @@ async function main() {
     return;
   }
   if ((process.env.GITHUB_EVENT_NAME === 'schedule' || process.env.AUTO_POST === '1') && !dryRun && !reportOnly && await alreadyPostedRecently()) {
-    console.log('直近20時間以内に投稿済みのためスキップ');
+    console.log('直近5時間以内に投稿済みのためスキップ');
     return;
   }
   let stats = null;
@@ -366,7 +366,9 @@ async function main() {
     const groupParams = new URLSearchParams({ select: 'name,created_at', publication_status: 'eq.published', is_demo: 'eq.false', created_at: `gte.${new Date(Date.now() - 7 * 86400000).toISOString()}`, order: 'created_at.desc' });
     groups = await jsonRequest(`${SUPABASE_GROUPS_URL}?${groupParams}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   }
-  const posts = buildPosts(events, new Date(), template, groups);
+  const now = new Date();
+  const includeWeekly = process.env.AUTO_POST !== '1' || Number(jstParts(now).hour) === 12;
+  const posts = buildPosts(events, now, template, groups, includeWeekly);
   let failures = 0;
   for (const [channel, configured, texts, send] of [['Threads', process.env.THREADS_TOKEN, posts.map((p) => p.threads), postThreads], ['Instagram', process.env.IG_TOKEN, posts.map((p) => p.instagram), postInstagram]]) {
     if (dryRun) {
