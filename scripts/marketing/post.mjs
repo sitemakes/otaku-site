@@ -307,7 +307,7 @@ async function announce(name, dryRun) {
     console.log(`X 1 (${xLength(post.x)} weighted chars):\n${post.x}\nhttps://x.com/intent/post?text=${encodeURIComponent(post.x)}`);
     if (xLength(post.x) > 280) console.log('X: 280 weighted charsを超えているため Issue コメントを作成しません');
   } else if (xLength(post.x) > 280) console.log(`X: 280 weighted charsを超えているため Issue コメントを作成しません（${xLength(post.x)} weighted chars）`);
-  else if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
+  else if (process.env.X_INTENT_ISSUE === '1' && process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
     try { await postXToIssue([post]); }
     catch (error) { failures += 1; console.error(`X Issue: ${error.message}`); }
   }
@@ -384,7 +384,7 @@ async function main() {
   }
   const xTexts = posts.map((post) => post.x);
   if (dryRun) xTexts.forEach((text, index) => console.log(`X ${index + 1} (${xLength(text)} weighted chars):\n${text}\nhttps://x.com/intent/post?text=${encodeURIComponent(text)}`));
-  else if (process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
+  else if (process.env.X_INTENT_ISSUE === '1' && process.env.GITHUB_TOKEN && process.env.GITHUB_REPOSITORY) {
     try { await postXToIssue(posts); }
     catch (error) { failures += 1; console.error(`X Issue: ${error.message}`); }
   }

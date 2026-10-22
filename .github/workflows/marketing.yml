@@ -19,7 +19,6 @@ on:
         required: true
 permissions:
   contents: read
-  issues: write
 concurrency:
   group: marketing
   cancel-in-progress: false
@@ -43,5 +42,3 @@ jobs:
           THREADS_TOKEN: ${{ secrets.THREADS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
