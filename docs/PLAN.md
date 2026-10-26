@@ -180,3 +180,6 @@ M1 DB（テーブル・関数・RLS、dry-run → 確認 → 適用）→ M2 申
 - 未ログイン・条件を満たさない一般ユーザー・管理者の3視点で、申請・承認・表示が RLS/関数で正しく許可・拒否される（`db/test-support-banners.sql`、ROLLBACK）。
 - 承認前・掲載日以外は表示されない。メッセージは `textContent` で表示（innerHTML 不可）。
 - スマートフォン幅でバナーがはみ出さない。`bash scripts/check.sh` すべてOK。
+
+#### M5 招待リンク（2026-10-26）
+運営者が法的確認を済ませたため着手。`db/support-banner-invites.sql`（`otaku_private.invites`・`invite_signups`、`otaku_my_invite_code()`、`otaku_claim_invite(code)`、`support_banner_eligibility` に `invite_count` を追加）と `db/test-support-banner-invites.sql`、`supabase.js`（`?ref=` を7日保存しログイン後に1回 claim）、`support-banner.*`（招待リンクの表示・コピー）、`privacy.html`。招待した人が参戦予定または記録を1件以上持って初めて1人と数える（別アカウントでの水増し対策）。既存会員（登録7日超）は招待扱いにしない。実装は Codex、本番でロールバック付き dry-run 11項目合格。
