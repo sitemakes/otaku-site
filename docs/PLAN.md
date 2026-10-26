@@ -125,6 +125,7 @@ X は API で自動投稿しない（有料のため）。毎日の実行で X �
 5. 文字数：Threads 500字・X 280（重み付き）以内に収める既存の削り方（`fitPost`/`fitLines`/`fitX`）をリンク変更後もそのまま使う。
 
 #### L3. レポートに流入元を出す（`scripts/marketing/report-data.mjs`）
+**完了（2026-10-26）**：`report-data.mjs` は `otaku_growth_stats` の結果をそのまま `site` に入れるため変更不要（`site.sources`・`site.current.source_views` が既に入る）。`growth-report.yml` の指示文に1行追加のみ（運営者の指示で Claude が直接変更）。
 `otaku_growth_stats` の `sources` をそのまま `report.json` の `site.sources` に入れる。週次レポートの指示文（`.github/workflows/growth-report.yml` の prompt）に「SNS からのサイト流入（source・テンプレート別）と前週比を表に入れる」を1行追加する。
 
 #### テスト（`tests/marketing.test.cjs` に追加）
