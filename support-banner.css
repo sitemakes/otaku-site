@@ -49,3 +49,132 @@
   .support-banner { padding: 16px; }
   .support-banner__message { font-size: 20px; }
 }
+
+.support-banner-list {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.support-banner-list[hidden],
+.support-banner-list:empty {
+  display: none;
+}
+
+.support-banner-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-banner-heading h2 {
+  margin: 0;
+}
+
+.support-banner-apply-link,
+.support-banner-invite a,
+.support-banner-report a {
+  color: var(--accent-text, #ff7ab8);
+}
+
+.support-banner-apply-link {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+.support-banner-items {
+  display: grid;
+  min-width: 0;
+  gap: 18px;
+}
+
+.support-banner-item {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.support-banner-actions,
+.support-banner-report-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.support-banner-actions button,
+.support-banner-report-actions button {
+  padding: 7px 11px;
+  border: 1px solid var(--line, #262632);
+  border-radius: 999px;
+  background: var(--card, #15151d);
+  color: var(--text, #f4f2f8);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.support-banner-actions button:disabled,
+.support-banner-report-actions button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.support-banner-status {
+  color: var(--muted, #a9a7b8);
+  font-size: 12px;
+}
+
+.support-banner-report {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line, #262632);
+  border-radius: 14px;
+  background: var(--card, #15151d);
+}
+
+.support-banner-report p,
+.support-banner-report-result,
+.support-banner-invite {
+  margin: 0;
+  color: var(--muted, #a9a7b8);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.support-banner-report a {
+  margin-left: 6px;
+}
+
+.support-banner-report label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted, #a9a7b8);
+  font-size: 13px;
+}
+
+.support-banner-report textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--line, #262632);
+  border-radius: 10px;
+  background: #111118;
+  color: var(--text, #f4f2f8);
+  font: inherit;
+}
+
+.support-banner-report-actions {
+  margin-top: 10px;
+}
+
+@media (max-width: 360px) {
+  .support-banner-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
