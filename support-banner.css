@@ -178,3 +178,31 @@
     gap: 4px;
   }
 }
+
+.support-banner-admin-item {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.support-banner-admin-meta,
+.support-banner-admin-warning,
+.support-banner-admin-item .support-banner-report {
+  margin: 0;
+}
+
+.support-banner-admin-warning {
+  color: var(--accent-text, #ff7ab8);
+  font-weight: 700;
+}
+
+.support-banner-admin-item .support-banner-report ul {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  line-height: 1.7;
+}
+
+#filters button[aria-pressed="true"] {
+  border-color: var(--accent-text, #ff7ab8);
+  color: var(--accent-text, #ff7ab8);
+}
