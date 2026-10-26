@@ -7,6 +7,7 @@
     ['reports.html', '通報'],
     ['content-admin.html', '掲示板・評価の通報'],
     ['review-admin.html', '同行評価'],
+    ['banner-admin.html', '応援バナー'],
   ];
   const page = location.pathname.split('/').pop();
   const main = document.querySelector('main');
