@@ -115,3 +115,37 @@ function otakuProfileUrl(next = location.href) {
   } catch {}
   otakuSupabase.rpc('otaku_count_page_source', { target_source: source, target_campaign: campaign }).then(() => {}, () => {});
 })();
+
+(async () => {
+  const storageKey = 'otaku_ref';
+  const codePattern = /^[a-z0-9]{10}$/;
+  const ref = new URLSearchParams(location.search).get('ref');
+  if (codePattern.test(ref || '')) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ code: ref, at: Date.now() }));
+    } catch {}
+  }
+
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+  } catch {
+    try { localStorage.removeItem(storageKey); } catch {}
+    return;
+  }
+  const now = Date.now();
+  if (!saved || !codePattern.test(saved.code || '') || !Number.isFinite(saved.at)
+      || saved.at > now || now - saved.at > 7 * 24 * 60 * 60 * 1000) {
+    try { localStorage.removeItem(storageKey); } catch {}
+    return;
+  }
+  if (location.hostname !== 'otaku-live-mvp.vercel.app') return;
+
+  const user = await otakuGetUser();
+  if (!user) return;
+  try {
+    const { data, error } = await otakuSupabase.rpc('otaku_claim_invite', { invite_code: saved.code });
+    if (!error && data === 'not_ready') return;
+  } catch {}
+  try { localStorage.removeItem(storageKey); } catch {}
+})();

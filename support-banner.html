@@ -31,6 +31,7 @@
       <p>推しへの応援メッセージを、サイトのホームやグループのページに1日だけ表示できます。運営者が確認してから掲載します。</p>
       <ul class="conditions">
         <li>過去60日に参戦予定を3公演以上登録、または公演後の記録を1件以上</li>
+        <li>自分の招待リンクから登録した人が、参戦予定などでサイトを使い始めた（過去60日に1人以上）</li>
         <li>同時に申請できるのは1件まで</li>
         <li>掲載後30日は次の申請はできません</li>
       </ul>
@@ -40,6 +41,14 @@
       <h2>申請できるか</h2>
       <p id="eligibilityCounts" class="muted"></p>
       <p id="eligibilityReason" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>あなたの招待リンク</h2>
+      <p id="inviteLink" class="application" tabindex="0">読み込み中...</p>
+      <button id="copyInviteButton" class="btn" type="button" disabled>コピー</button>
+      <p id="copyInviteStatus" class="status" role="status"></p>
+      <p class="muted">招待した人が登録し、参戦予定の登録などでサイトを使い始めると1人と数えます。SNSでの紹介に対して運営から見返りはありません。</p>
     </section>
 
     <section class="card">

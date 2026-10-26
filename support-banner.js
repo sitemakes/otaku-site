@@ -7,6 +7,9 @@
   const loginLink = document.getElementById('loginLink');
   const eligibilityCounts = document.getElementById('eligibilityCounts');
   const eligibilityReason = document.getElementById('eligibilityReason');
+  const inviteLink = document.getElementById('inviteLink');
+  const copyInviteButton = document.getElementById('copyInviteButton');
+  const copyInviteStatus = document.getElementById('copyInviteStatus');
   const bannerForm = document.getElementById('bannerForm');
   const bannerFields = document.getElementById('bannerFields');
   const groupSelect = document.getElementById('groupSelect');
@@ -25,6 +28,7 @@
   let currentUserId = null;
   let eligible = false;
   let submitted = false;
+  let inviteUrl = '';
 
   const jstToday = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const addDays = (date, days) => {
@@ -117,7 +121,8 @@
     const result = Array.isArray(data) ? data[0] : data;
     const attendanceCount = Number(result?.attendance_count || 0);
     const recordCount = Number(result?.record_count || 0);
-    eligibilityCounts.textContent = `過去60日の参戦予定：${attendanceCount}公演 · 公演後の記録：${recordCount}件`;
+    const inviteCount = Number(result?.invite_count || 0);
+    eligibilityCounts.textContent = `過去60日の参戦予定：${attendanceCount}公演 · 公演後の記録：${recordCount}件 · 招待から利用開始：${inviteCount}人`;
     eligible = result?.eligible === true;
     if (eligible) {
       eligibilityReason.textContent = '今は申請できます。';
@@ -126,8 +131,28 @@
     } else if (result?.cooldown_until) {
       eligibilityReason.textContent = `掲載後のクールダウン中です。${formatDate(result.cooldown_until)}まで申請できません。`;
     } else {
-      eligibilityReason.textContent = '申請条件が足りません。参戦予定を3公演以上登録するか、公演後の記録を1件以上登録してください。';
+      eligibilityReason.textContent = '申請条件が足りません。参戦予定を3公演以上登録するか、公演後の記録を1件以上登録するか、招待した人にサイトを使い始めてもらってください。';
     }
+  }
+
+  async function loadInviteLink() {
+    const { data, error } = await otakuSupabase.rpc('otaku_my_invite_code');
+    if (error || !/^[a-z0-9]{10}$/.test(data || '')) {
+      inviteLink.textContent = '招待リンクを取得できませんでした。';
+      return;
+    }
+    inviteUrl = `https://otaku-live-mvp.vercel.app/?ref=${data}`;
+    inviteLink.textContent = inviteUrl;
+    copyInviteButton.disabled = false;
+  }
+
+  function selectInviteLink() {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(inviteLink);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    inviteLink.focus();
   }
 
   function statusLabel(row) {
@@ -232,6 +257,17 @@
     renderPreview();
   });
   bannerForm.elements.displayMode.forEach(radio => radio.addEventListener('change', renderPreview));
+  copyInviteButton.addEventListener('click', async () => {
+    if (!inviteUrl) return;
+    copyInviteStatus.textContent = '';
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      copyInviteStatus.textContent = 'コピーしました。';
+    } catch {
+      selectInviteLink();
+      copyInviteStatus.textContent = 'コピーできなかったため、リンクを選択しました。';
+    }
+  });
 
   (async () => {
     const user = await otakuGetUser();
@@ -247,7 +283,7 @@
     showOn.min = today;
     showOn.max = addDays(today, 60);
     showOn.value = today;
-    const [groupsLoaded] = await Promise.all([loadGroups(), loadEligibility()]);
+    const [groupsLoaded] = await Promise.all([loadGroups(), loadEligibility(), loadInviteLink()]);
     bannerFields.disabled = !(groupsLoaded && eligible);
     idolSelect.disabled = true;
     renderPreview();
