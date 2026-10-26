@@ -94,3 +94,51 @@ X は API で自動投稿しない（有料のため）。毎日の実行で X �
 
 ### K. 投稿の種類を増やす（2026-10-14 承認）
 テンプレートに D（大型公演のカウントダウン）・E（地域別の今週末）・F（質問型）・G（新グループのお知らせ）を追加し、既存の成績による選択（ε-greedy）に含める。データが無い日は A にフォールバック。
+
+### L. 投稿からサイトに来てもらう（直リンク・型の絞り込み・流入計測）— 承認待ち（2026-10-26）
+**背景**：10/13〜10/19 に Threads は 15投稿・表示313 だったが、サイト閲覧は週38→翌週5、反応（いいね等）0。投稿は見られているがリンクが押されていない。全投稿のリンクがトップページ（`SITE_URL`）で、読んだ人の知りたいページに直接行けない。表示が多かったのは B（グループ別まとめ、平均35）・C（呼びかけ、平均34.5）、少なかったのは D（カウントダウン）・F（質問）・G（新グループ紹介）で各5〜7。
+
+**目的**：投稿のリンクを「その投稿の内容のページ」に変え、成績の悪い型をやめ、どの投稿から何人来たかを数えられるようにする。
+
+**スコープ外**：画像付き投稿、ハッシュタグの変更、Instagram の投稿内容（Instagram は本文のリンクが押せないので変更しない）、他人の投稿への返信などの自動操作、Vercel Web Analytics の有効化。
+
+#### L1. 流入元の計測（DB → 画面の順。DB は Claude が dry-run 後に適用）
+**実装・チェック完了（2026-10-26、ブランチ feat/sns-source-tracking）**：`db/page-source-counts.sql`・`supabase.js`・`privacy.html`。本番でロールバック付き dry-run 済み（許可外の source は数えない／大文字の Threads も threads に／不正な campaign は空／anon・authenticated はテーブルを直接読めない／`otaku_growth_stats` に source_views・sources が出る）。本番 DB に migration `otaku_page_source_counts` として適用済み（2026-10-26、RLS 有効・anon/authenticated の直接参照不可を確認）。
+1. `db/page-source-counts.sql`（新規。追加のみ・戻し手順をファイル末尾にコメントで書く）
+   - テーブル `public.otaku_page_source_counts(day date, source text, campaign text, views int not null default 0, primary key(day, source, campaign))`。RLS 有効、anon/authenticated の直接権限は revoke。
+   - 関数 `public.otaku_count_page_source(source text, campaign text)`：SECURITY DEFINER、`set search_path = ''`。`source` は `threads` / `instagram` / `x` 以外なら何もしない。`campaign` は正規表現 `^[A-H]$` に一致しなければ `''`。day は日本時間の今日。既存 `otaku_count_page_view` と同じ形で upsert、1日1行上限1万回。anon/authenticated に execute を許可。
+   - `public.otaku_growth_stats` を `create or replace` し、既存の戻り値はそのままに `'sources'`（今週の `source`・`campaign` 別合計の配列）と `'previous'` 内の `'source_views'`（前週の合計）を追加する。既存キーの名前・意味は変えない。
+2. `supabase.js`（106行目の `otaku_count_page_view` 呼び出しの直後）：`new URLSearchParams(location.search).get('utm_source')` が `threads`/`instagram`/`x` のときだけ、`otaku_count_page_source` を1回呼ぶ（`utm_campaign` をそのまま渡す。検証は DB 側）。同じタブでの再読み込みで二重に数えないよう、`sessionStorage` のキー `otaku_src_counted` に `source:campaign:path` を保存し、同じなら呼ばない。`sessionStorage` は try/catch で囲み、使えなければそのまま1回呼ぶ。失敗は無視（既存と同じ `.then(() => {}, () => {})`）。管理画面では数えない（既存の判定に合わせる）。
+3. `privacy.html` の「ページごとの閲覧回数」の項目を「ページごとの閲覧回数と、SNS など流入元ごとの閲覧回数（日別の合計のみ。…以下同じ）」に変え、改定日を 2026-10-26 にする。
+
+#### L2. 投稿の直リンクと型の整理（`scripts/marketing/post.mjs`）
+1. 公演取得の `select` に `group_id` と `otaku_idol_groups(id,name)` を含める（G 用のグループ取得は残す）。
+2. リンク作成の関数 `postLink(post, template, source)` を追加し、`finish()` の `SITE_URL` をこれに置き換える：
+   - 投稿に含まれる公演が1件 → `event.html?id=<公演id>`
+   - 公演が複数でもグループが1つ → `index.html?group=<グループid>`（ホームは既に `?group=` で絞り込める）
+   - それ以外 → トップ（`SITE_URL`）
+   - 末尾に `utm_source=<threads|x>&utm_medium=social&utm_campaign=<テンプレート1文字>` を付ける。Instagram は従来どおり「プロフィールのリンクから見られます」で URL なし。
+   - URL の直前の行に「全日程・参戦予定の登録はこちら👇」を入れる（D/E/F/G で既に同様の行がある投稿は重ねない）。
+3. 新しい型 H「グループ特集」を追加：今後30日以内に公演があるグループを公演数の多い順に並べ、`jstDayNumber(now) % 件数` 番目のグループを選ぶ（状態を持たずに日替わり）。1行目 `🎯 <グループ名>の今後の公演`、2行目以降は最大5公演 `・<M/D(曜)> <会場>`、残りは「ほか○件」。リンクはそのグループのページ。`detectTemplate` は 1行目が `🎯 ` で始まり `の今後の公演` で終わるものを H と判定する。該当グループが無ければ A にフォールバック。
+4. 選ぶ型を A・B・C・E・H に絞る：`TEMPLATES` を選択用の `ACTIVE_TEMPLATES = ['A','B','C','E','H']` と、判定・集計用の全体（A〜H）に分ける。`chooseTemplate` は `ACTIVE_TEMPLATES` だけから選ぶ（3回未満優先・80%最良・20%ランダムの規則は同じ）。D・F・G の文面作成コードは消さずに残す（`FORCE_TEMPLATE` で dry-run は可能なまま。`FORCE_TEMPLATE` の正規表現を `^[A-H]$` に）。成績表（`--report`）は A〜H 全部を出す。
+5. 文字数：Threads 500字・X 280（重み付き）以内に収める既存の削り方（`fitPost`/`fitLines`/`fitX`）をリンク変更後もそのまま使う。
+
+#### L3. レポートに流入元を出す（`scripts/marketing/report-data.mjs`）
+`otaku_growth_stats` の `sources` をそのまま `report.json` の `site.sources` に入れる。週次レポートの指示文（`.github/workflows/growth-report.yml` の prompt）に「SNS からのサイト流入（source・テンプレート別）と前週比を表に入れる」を1行追加する。
+
+#### テスト（`tests/marketing.test.cjs` に追加）
+- 1公演だけの投稿 → リンクが `event.html?id=` で、`utm_source=threads` と `utm_campaign=<型>` が付く。X 文面は `utm_source=x`。
+- 同じグループの複数公演 → `index.html?group=<id>`。複数グループ → トップ＋utm。
+- Instagram 文面に URL が入らない。
+- H：公演数の多いグループが選ばれ、1行目が `🎯 …の今後の公演`、`detectTemplate` が H を返す。公演が無ければ A になる。
+- `chooseTemplate` が D・F・G を返さない（random を固定して数パターン）。
+- 既存テストがすべて通る（文面の1行目は変えないので既存の判定は壊れない想定）。
+
+#### 完了条件
+- `node --test tests/marketing.test.cjs` と `bash scripts/check.sh` がすべてOK。
+- dry-run（`FORCE_TEMPLATE` を A/B/C/E/H で実行）で、各文面のリンク先と utm が上の規則どおり。
+- DB：dry-run（BEGIN〜ROLLBACK）で、許可外の source を渡すと行が増えない・`threads`/`B` で1行増える・anon でテーブルを直接読めないことを確認してから適用。
+- 本番で `https://otaku-live-mvp.vercel.app/index.html?utm_source=threads&utm_campaign=B` を開くと `otaku_page_source_counts` に1件入り、再読み込みでは増えない。
+
+#### 進め方
+L1 の SQL（Codex が書く）→ Claude が dry-run・運営者確認のうえ適用 → L1 の画面と L2・L3（Codex、1ステップずつ）→ Claude が差分確認 → PR → マージ。

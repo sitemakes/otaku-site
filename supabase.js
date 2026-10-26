@@ -104,4 +104,14 @@ function otakuProfileUrl(next = location.href) {
   if (excludedPages.has(fileName)) return;
   window.__otakuViewCounted = true;
   otakuSupabase.rpc('otaku_count_page_view', { target_path: fileName }).then(() => {}, () => {});
+  const params = new URLSearchParams(location.search);
+  const source = params.get('utm_source');
+  if (!['threads', 'instagram', 'x'].includes(source)) return;
+  const campaign = params.get('utm_campaign') || '';
+  const key = `${source}:${campaign}:${fileName}`;
+  try {
+    if (sessionStorage.getItem('otaku_src_counted') === key) return;
+    sessionStorage.setItem('otaku_src_counted', key);
+  } catch {}
+  otakuSupabase.rpc('otaku_count_page_source', { target_source: source, target_campaign: campaign }).then(() => {}, () => {});
 })();
