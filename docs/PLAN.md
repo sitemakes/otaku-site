@@ -112,6 +112,7 @@ X は API で自動投稿しない（有料のため）。毎日の実行で X �
 3. `privacy.html` の「ページごとの閲覧回数」の項目を「ページごとの閲覧回数と、SNS など流入元ごとの閲覧回数（日別の合計のみ。…以下同じ）」に変え、改定日を 2026-10-26 にする。
 
 #### L2. 投稿の直リンクと型の整理（`scripts/marketing/post.mjs`）
+**実装完了（2026-10-26、Codex が利用上限のため運営者の指示で Claude が直接実装、ブランチ feat/sns-direct-links）**：テスト21件・`scripts/check.sh` OK。本番データの dry-run で A/B/C/E/H の Threads 文面・リンク・utm、X 文面が280以内であることを確認。
 1. 公演取得の `select` に `group_id` と `otaku_idol_groups(id,name)` を含める（G 用のグループ取得は残す）。
 2. リンク作成の関数 `postLink(post, template, source)` を追加し、`finish()` の `SITE_URL` をこれに置き換える：
    - 投稿に含まれる公演が1件 → `event.html?id=<公演id>`
