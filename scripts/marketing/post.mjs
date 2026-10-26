@@ -8,7 +8,9 @@ const SITE_URL = 'https://otaku-live-mvp.vercel.app/';
 const IMAGE_URL = `${SITE_URL}og-default.jpg`;
 const TAGS = '#OTAKULIVE #アイドル';
 const JST = 'Asia/Tokyo';
-const TEMPLATES = { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', G: 'G' };
+const TEMPLATES = { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', G: 'G', H: 'H' };
+export const ACTIVE_TEMPLATES = ['A', 'B', 'C', 'E', 'H'];
+const CTA = '全日程・参戦予定の登録はこちら👇';
 const CALLS = ['今週末の現場、一緒に行く人いますか？👀', '次の現場、もう決めた？🎤', '一人参戦が不安なら、同行募集を使ってみて🤝', '推しの公演、見逃してない？👀', '現場の予定、ここでまとめてチェック✅'];
 
 const jstParts = (date) => Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
@@ -23,7 +25,21 @@ const groupName = (event) => event.otaku_idol_groups?.name || 'グループ名�
 const eventTitle = (event) => event.title?.startsWith(groupName(event)) ? event.title : `${groupName(event)} ${event.title}`;
 const eventLine = (event) => `・${event.title} ${dateLabel(event.starts_at)} ${event.prefecture || ''}`.trim();
 const groupedLine = (event) => `【${groupName(event)}】${dateLabel(event.starts_at)} ${event.venue || '会場未定'}`;
-const finish = (headline, lines, instagram) => `${headline}\n${lines.join('\n')}\n${instagram ? 'プロフィールのリンクから見られます' : SITE_URL}\n${TAGS}`;
+const finish = (headline, lines, instagram, { link = SITE_URL, cta = false } = {}) => `${headline}\n${lines.concat(!instagram && cta ? [CTA] : []).join('\n')}\n${instagram ? 'プロフィールのリンクから見られます' : link}\n${TAGS}`;
+
+export function postLink(events = [], template = 'A', source = 'threads') {
+  const list = events || [];
+  const groupOf = (event) => event.group_id || event.otaku_idol_groups?.id;
+  const groupIds = [...new Set(list.map(groupOf))];
+  let path = '';
+  if (list.length === 1 && list[0].id) path = `event.html?id=${encodeURIComponent(list[0].id)}`;
+  else if (list.length > 1 && groupIds.length === 1 && groupIds[0]) path = `index.html?group=${encodeURIComponent(groupIds[0])}`;
+  const url = new URL(path, SITE_URL);
+  url.searchParams.set('utm_source', source);
+  url.searchParams.set('utm_medium', 'social');
+  url.searchParams.set('utm_campaign', template);
+  return url.toString();
+}
 
 export function xLength(text) {
   let length = 0;
@@ -46,47 +62,48 @@ export function detectTemplate(text) {
   if (first.startsWith('📍 今週末の')) return 'E';
   if (first.startsWith('🙋 今週末どの現場')) return 'F';
   if (first.startsWith('🎉 新しく掲載したグループ')) return 'G';
+  if (first.startsWith('🎯 ') && first.endsWith('の今後の公演')) return 'H';
   return null;
 }
 
 const callLine = (now, kind, count, groups) => `${CALLS[Math.floor(Number(jstParts(now).day) % CALLS.length)]}\n${kind === 'new' ? `${groups.slice(0, 3).join('、')}など、新しく${count}公演を追加しました。` : `${kind === 'tomorrow' ? '明日' : '今週'}は${count}公演`}`;
 
-function fitPost(headline, events, instagram, limit, suffix = '', line = eventLine) {
+function fitPost(headline, events, instagram, limit, suffix = '', line = eventLine, options = {}) {
   let count = Math.min(5, events.length);
   while (count >= 0) {
     const rest = events.length > count ? `\nほか${events.length - count}件` : '';
-    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), instagram) + suffix;
+    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), instagram, options) + suffix;
     if (text.length <= limit) return text;
     count -= 1;
   }
-  return finish(headline, [], instagram) + suffix;
+  return finish(headline, [], instagram, options) + suffix;
 }
 
-function fitX(headline, events, line = eventLine) {
+function fitX(headline, events, line = eventLine, options = {}) {
   let count = Math.min(5, events.length);
   while (count >= 0) {
     const rest = events.length > count ? `\nほか${events.length - count}件` : '';
-    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), false);
+    const text = finish(headline, events.slice(0, count).map(line).concat(rest ? [rest.trim()] : []), false, options);
     if (xLength(text) <= 280) return text;
     count -= 1;
   }
-  return finish(headline, [], false);
+  return finish(headline, [], false, options);
 }
 
-function fitXLines(headline, lines) {
+function fitXLines(headline, lines, options = {}) {
   for (let count = lines.length; count >= 0; count -= 1) {
-    const text = finish(headline, lines.slice(0, count), false);
+    const text = finish(headline, lines.slice(0, count), false, options);
     if (xLength(text) <= 280) return text;
   }
-  return finish(headline, [], false);
+  return finish(headline, [], false, options);
 }
 
-function fitLines(headline, lines, instagram, limit) {
+function fitLines(headline, lines, instagram, limit, options = {}) {
   for (let count = lines.length; count >= 0; count -= 1) {
-    const text = finish(headline, lines.slice(0, count), instagram);
+    const text = finish(headline, lines.slice(0, count), instagram, options);
     if (text.length <= limit) return text;
   }
-  return finish(headline, [], instagram);
+  return finish(headline, [], instagram, options);
 }
 
 const weekendKeys = (now) => {
@@ -101,14 +118,14 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
   const sorted = [...events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
   const posts = [];
   const fresh = sorted.filter((event) => current - new Date(event.created_at) >= 0 && current - new Date(event.created_at) <= 86400000);
-  if (['D', 'E', 'F', 'G'].includes(template)) {
+  if (['D', 'E', 'F', 'G', 'H'].includes(template)) {
     const weekend = weekendKeys(current);
     const weekendEvents = sorted.filter((event) => weekend.has(dayKey(new Date(event.starts_at))));
     if (template === 'D') {
       const event = sorted.find((item) => /ドーム|アリーナ|スタジアム|DOME|ARENA|Arena|ガーデンシアター|武道館/.test(item.venue || '') && jstDayNumber(item.starts_at) - jstDayNumber(current) >= 1 && jstDayNumber(item.starts_at) - jstDayNumber(current) <= 7);
       if (event) {
         const days = jstDayNumber(event.starts_at) - jstDayNumber(current);
-        posts.push({ kind: 'special', headline: `⏳ ${event.venue}まであと${days}日！`, lines: [eventTitle(event), `${dateLabel(event.starts_at)} 開演`, '同じ日に参戦する人・同行者はこちら👇'] });
+        posts.push({ kind: 'special', headline: `⏳ ${event.venue}まであと${days}日！`, lines: [eventTitle(event), `${dateLabel(event.starts_at)} 開演`, '同じ日に参戦する人・同行者はこちら👇'], events: [event] });
       }
     } else if (template === 'E' && weekendEvents.length) {
       const tieOrder = ['東京都', '大阪府', '愛知県', '福岡県', '神奈川県'];
@@ -129,17 +146,32 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
       const lines = displayed.map(({ event, venue, count }) => `・${groupName(event)} ${dateLabel(event.starts_at).replace(/ \d{2}:\d{2}$/, '')} ${venue}${count > 1 ? `（${count}公演）` : ''}`);
       const displayedCount = displayed.reduce((sum, item) => sum + item.count, 0);
       if (localEvents.length > displayedCount) lines.push(`ほか${localEvents.length - displayedCount}件`);
-      posts.push({ kind: 'special', headline: `📍 今週末の${prefecture}の現場`, lines });
+      posts.push({ kind: 'special', headline: `📍 今週末の${prefecture}の現場`, lines, events: localEvents });
     } else if (template === 'F' && weekendEvents.length) {
       const names = [...new Set(weekendEvents.map(groupName))].slice(0, 6);
-      posts.push({ kind: 'special', headline: '🙋 今週末どの現場に行く？', lines: [`${names.join('、')}など`, '返信で教えてください👇', '参戦予定の登録はこちら'] });
+      posts.push({ kind: 'special', headline: '🙋 今週末どの現場に行く？', lines: [`${names.join('、')}など`, '返信で教えてください👇', '参戦予定の登録はこちら'], events: weekendEvents });
     } else if (template === 'G') {
       const recent = [...groups].filter((group) => current - new Date(group.created_at) >= 0 && current - new Date(group.created_at) <= 7 * 86400000).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       if (recent.length) {
         const lines = recent.slice(0, 8).map((group) => `・${group.name}`);
         if (recent.length > 8) lines.push(`ほか${recent.length - 8}グループ`);
         lines.push('公演情報・参戦予定の登録はこちら');
-        posts.push({ kind: 'special', headline: '🎉 新しく掲載したグループ', lines });
+        posts.push({ kind: 'special', headline: '🎉 新しく掲載したグループ', lines, events: [] });
+      }
+    } else if (template === 'H') {
+      const until = addDays(current, 30);
+      const byGroup = new Map();
+      for (const event of sorted.filter((item) => new Date(item.starts_at) >= current && new Date(item.starts_at) < until)) {
+        const key = event.group_id || event.otaku_idol_groups?.id || groupName(event);
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push(event);
+      }
+      const ranked = [...byGroup.values()].sort((a, b) => b.length - a.length || groupName(a[0]).localeCompare(groupName(b[0])));
+      if (ranked.length) {
+        const chosen = ranked[jstDayNumber(current) % ranked.length];
+        const lines = chosen.slice(0, 5).map((event) => `・${dateLabel(event.starts_at).replace(/ \d{2}:\d{2}$/, '')} ${event.venue || '会場未定'}`);
+        if (chosen.length > 5) lines.push(`ほか${chosen.length - 5}件`);
+        posts.push({ kind: 'special', headline: `🎯 ${groupName(chosen[0])}の今後の公演`, lines, events: chosen });
       }
     }
     if (!posts.length) {
@@ -164,19 +196,23 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
   }
   const limited = posts.slice(0, 2);
   return limited.map((post) => {
-    if (post.kind === 'special') return { threads: fitLines(post.headline, post.lines, false, 500), instagram: fitLines(post.headline, post.lines, true, 2200), x: fitXLines(post.headline, post.lines) };
+    const cta = post.kind !== 'special' || !['D', 'F', 'G'].includes(template);
+    const threads = { link: postLink(post.events, template, 'threads'), cta };
+    const x = { link: postLink(post.events, template, 'x'), cta };
+    if (post.kind === 'special') return { threads: fitLines(post.headline, post.lines, false, 500, threads), instagram: fitLines(post.headline, post.lines, true, 2200), x: fitXLines(post.headline, post.lines, x) };
     if (post.kind === 'week') {
       const lines = template === 'B' ? post.groups.slice(0, 8).map(([name, count]) => `【${name}】${count}公演`) : post.groups.slice(0, 8).map(([name, count]) => `・${name} ${count}公演`);
       if (post.groups.length > 8) lines.push(`・ほか${post.groups.length - 8}グループ`);
-      if (template === 'C') return { threads: finish(post.headline, [], false), instagram: finish(post.headline, [], true), x: finish(post.headline, [], false) };
-      return { threads: finish(post.headline, lines, false), instagram: finish(post.headline, lines, true), x: fitXLines(post.headline, lines) };
+      if (template === 'C') return { threads: finish(post.headline, [], false, threads), instagram: finish(post.headline, [], true), x: finish(post.headline, [], false, x) };
+      return { threads: finish(post.headline, lines, false, threads), instagram: finish(post.headline, lines, true), x: fitXLines(post.headline, lines, x) };
     }
-    return { threads: fitPost(post.headline, post.events, false, 500, '', template === 'B' ? groupedLine : eventLine), instagram: fitPost(post.headline, post.events, true, 2200, '', template === 'B' ? groupedLine : eventLine), x: fitX(post.headline, post.events, template === 'B' ? groupedLine : eventLine) };
+    const line = template === 'B' ? groupedLine : eventLine;
+    return { threads: fitPost(post.headline, post.events, false, 500, '', line, threads), instagram: fitPost(post.headline, post.events, true, 2200, '', line), x: fitX(post.headline, post.events, line, x) };
   });
 }
 
 export function chooseTemplate(stats, random = Math.random) {
-  const names = Object.keys(TEMPLATES);
+  const names = [...ACTIVE_TEMPLATES];
   if (!stats) return names[Math.floor(random() * names.length)];
   const under = names.filter((name) => (stats[name]?.posts || 0) < 3);
   if (under.length) return under.sort((a, b) => (stats[a]?.posts || 0) - (stats[b]?.posts || 0) || names.indexOf(a) - names.indexOf(b))[0];
@@ -356,10 +392,10 @@ async function main() {
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`); else console.log(table);
     return;
   }
-  const params = new URLSearchParams({ select: 'id,title,venue,prefecture,starts_at,created_at,otaku_idol_groups(name)', publication_status: 'eq.published', is_demo: 'eq.false', starts_at: `gte.${new Date().toISOString()}`, order: 'starts_at.asc', limit: '1000' });
+  const params = new URLSearchParams({ select: 'id,group_id,title,venue,prefecture,starts_at,created_at,otaku_idol_groups(id,name)', publication_status: 'eq.published', is_demo: 'eq.false', starts_at: `gte.${new Date().toISOString()}`, order: 'starts_at.asc', limit: '1000' });
   const events = await jsonRequest(`${SUPABASE_URL}?${params}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  const forcedTemplate = dryRun && /^[A-G]$/.test(process.env.FORCE_TEMPLATE || '') ? process.env.FORCE_TEMPLATE : null;
-  const template = forcedTemplate || (process.env.THREADS_TOKEN ? chooseTemplate(stats) : Object.keys(TEMPLATES)[Number(jstParts(new Date()).day) % Object.keys(TEMPLATES).length]);
+  const forcedTemplate = dryRun && /^[A-H]$/.test(process.env.FORCE_TEMPLATE || '') ? process.env.FORCE_TEMPLATE : null;
+  const template = forcedTemplate || (process.env.THREADS_TOKEN ? chooseTemplate(stats) : ACTIVE_TEMPLATES[Number(jstParts(new Date()).day) % ACTIVE_TEMPLATES.length]);
   console.log(`テンプレート: ${template}${dryRun && stats ? ` / 成績: ${JSON.stringify(stats)}` : ''}`);
   let groups = [];
   if (template === 'G') {
