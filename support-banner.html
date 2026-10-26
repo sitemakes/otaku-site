@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>応援バナー | OTAKU LIVE</title>
+  <style>
+    :root{--card:#15151d;--text:#f4f2f8;--muted:#a9a7b8;--line:#262632;--accent:#d6246f}
+    *{box-sizing:border-box}body{margin:0;background:#0a0a0f;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:680px;margin:0 auto;padding:24px 16px 60px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.top a{color:#ffc9e1;text-decoration:none}.card{padding:18px;margin-bottom:14px}.card h2{margin:0 0 10px;font-size:18px}.muted{color:var(--muted);font-size:13px;line-height:1.65}.conditions{margin:12px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.7}.field{margin:14px 0}.field label,.field-label{display:block;margin-bottom:6px;color:#d6d4e0;font-size:13px;font-weight:700}.field input,.field select,.field textarea{width:100%;padding:13px;border:1px solid var(--line);border-radius:13px;background:#0f0f15;color:var(--text);font-size:15px}.field textarea{min-height:100px;resize:vertical}.choice{display:flex;gap:16px;flex-wrap:wrap}.choice label{display:flex;align-items:center;gap:6px;color:var(--text);font-weight:400}.counter{text-align:right;margin-top:4px}.btn{width:100%;padding:14px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;cursor:pointer}.btn:disabled,fieldset:disabled{opacity:.55}.status{margin-top:10px;color:#ffd0e3;font-size:14px;line-height:1.6}.preview{margin-top:12px}.application-list{display:grid;gap:10px}.application{padding:14px;border:1px solid var(--line);border-radius:14px;background:#101017;overflow-wrap:anywhere}.application__head{display:flex;justify-content:space-between;gap:10px;font-size:13px}.application__message{margin:9px 0;font-weight:700}.application__meta{color:var(--muted);font-size:12px}.login-link{display:inline-flex;margin-top:12px;color:#ffc9e1}fieldset{min-width:0;margin:0;padding:0;border:0}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="support-banner.css">
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><strong>OTAKU LIVE</strong><a href="profile.html">マイページ</a></div>
+  <h1 class="page-title">応援バナーを申請</h1>
+  <p id="loading" class="muted">読み込み中...</p>
+
+  <section id="signedOut" class="card" hidden>
+    <p>応援バナーの申請にはログインが必要です。</p>
+    <a id="loginLink" class="login-link" href="login.html">ログインする</a>
+  </section>
+
+  <div id="signedIn" hidden>
+    <section class="card">
+      <h2>応援バナーについて</h2>
+      <p>推しへの応援メッセージを、サイトのホームやグループのページに1日だけ表示できます。運営者が確認してから掲載します。</p>
+      <ul class="conditions">
+        <li>過去60日に参戦予定を3公演以上登録、または公演後の記録を1件以上</li>
+        <li>同時に申請できるのは1件まで</li>
+        <li>掲載後30日は次の申請はできません</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>申請できるか</h2>
+      <p id="eligibilityCounts" class="muted"></p>
+      <p id="eligibilityReason" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>申請内容</h2>
+      <form id="bannerForm">
+        <fieldset id="bannerFields" disabled>
+          <div class="field"><label for="groupSelect">グループ</label><select id="groupSelect" required></select></div>
+          <div class="field"><label for="idolSelect">メンバー（任意）</label><select id="idolSelect"></select></div>
+          <div class="field"><label for="occasionSelect">きっかけ</label><select id="occasionSelect"><option value="birthday">誕生日</option><option value="anniversary">周年</option><option value="event">公演応援</option><option value="other">その他</option></select></div>
+          <div class="field"><label for="showOn">掲載日</label><input id="showOn" type="date" required /></div>
+          <div class="field"><label for="bannerMessage">メッセージ</label><textarea id="bannerMessage" maxlength="40" required></textarea><div id="messageCount" class="muted counter">残り40文字</div></div>
+          <div class="field"><span class="field-label">表示名</span><div class="choice"><label><input type="radio" name="displayMode" value="anonymous" checked> 匿名のファン</label><label><input type="radio" name="displayMode" value="profile"> プロフィールの表示名</label></div><p class="muted">プロフィールの表示名は、プロフィールで表示名を公開している場合だけ表示されます。</p></div>
+          <button id="submitButton" class="btn" type="submit">申請する</button>
+        </fieldset>
+      </form>
+      <p id="submitStatus" class="status" role="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>プレビュー</h2>
+      <div id="preview" class="preview"></div>
+    </section>
+
+    <section class="card">
+      <h2>自分の申請</h2>
+      <div id="applicationList" class="application-list"><p class="muted">読み込み中...</p></div>
+    </section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="supabase.js"></script>
+<script src="support-banner-card.js"></script>
+<script src="support-banner.js"></script>
+<script src="legal-links.js"></script>
+<script src="bottom-nav.js"></script>
+</body>
+</html>

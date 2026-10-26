@@ -1,0 +1,51 @@
+.support-banner {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line, #262632);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(214, 36, 111, .22), transparent 42%),
+    var(--card, #15151d);
+  color: var(--text, #f4f2f8);
+  overflow-wrap: anywhere;
+}
+
+.support-banner__label {
+  color: var(--accent-text, #ff7ab8);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.support-banner__target {
+  margin-top: 8px;
+  color: var(--muted, #a9a7b8);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.support-banner__message {
+  margin: 14px 0;
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.support-banner__from,
+.support-banner__date {
+  color: var(--muted, #a9a7b8);
+  font-size: 13px;
+}
+
+.support-banner__date {
+  margin-top: 4px;
+  font-family: var(--font-num, sans-serif);
+}
+
+@media (max-width: 360px) {
+  .support-banner { padding: 16px; }
+  .support-banner__message { font-size: 20px; }
+}
