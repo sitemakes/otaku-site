@@ -9,7 +9,7 @@ const IMAGE_URL = `${SITE_URL}og-default.jpg`;
 const TAGS = '#OTAKULIVE #アイドル';
 const JST = 'Asia/Tokyo';
 const TEMPLATES = { A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', G: 'G', H: 'H' };
-export const ACTIVE_TEMPLATES = ['A', 'B', 'C', 'E', 'H'];
+export const ACTIVE_TEMPLATES = ['A', 'B', 'C', 'E'];
 const CTA = '全日程・参戦予定の登録はこちら👇';
 const CALLS = ['今週末の現場、一緒に行く人いますか？👀', '次の現場、もう決めた？🎤', '一人参戦が不安なら、同行募集を使ってみて🤝', '推しの公演、見逃してない？👀', '現場の予定、ここでまとめてチェック✅'];
 
@@ -214,17 +214,24 @@ export function buildPosts(events, now = new Date(), template = 'A', groups = []
 export function chooseTemplate(stats, random = Math.random) {
   const names = [...ACTIVE_TEMPLATES];
   if (!stats) return names[Math.floor(random() * names.length)];
+  const weekly = ['C', 'E'].find((name) => (stats[name]?.recentPosts || 0) === 0);
+  if (weekly) return weekly;
   const under = names.filter((name) => (stats[name]?.posts || 0) < 3);
   if (under.length) return under.sort((a, b) => (stats[a]?.posts || 0) - (stats[b]?.posts || 0) || names.indexOf(a) - names.indexOf(b))[0];
   if (random() < 0.2) return names[Math.floor(random() * names.length)];
-  return names.sort((a, b) => ((stats[b]?.engagements || 0) / (stats[b]?.views || 1)) - ((stats[a]?.engagements || 0) / (stats[a]?.views || 1)))[0];
+  const hasEngagements = names.some((name) => (stats[name]?.engagements || 0) > 0);
+  const score = (name) => hasEngagements
+    ? (stats[name]?.engagements || 0) / (stats[name]?.views || 1)
+    : (stats[name]?.views || 0) / (stats[name]?.posts || 1);
+  return names.reduce((best, name) => score(name) > score(best) ? name : best);
 }
 
 export async function fetchThreadsStats(token, userId, now = new Date()) {
   const since = new Date(now.getTime() - 30 * 86400000);
+  const recentSince = new Date(now.getTime() - 7 * 86400000);
   const list = await jsonRequest(`https://graph.threads.net/v1.0/${userId}/threads?fields=id,text,timestamp&limit=100&access_token=${encodeURIComponent(token)}`, { method: 'GET' });
-  const stats = Object.fromEntries(Object.keys(TEMPLATES).map((name) => [name, { posts: 0, views: 0, engagements: 0 }]));
-  for (const post of list.data || []) { if (new Date(post.timestamp) < since) continue; const kind = detectTemplate(post.text); if (!kind) continue; const insight = await jsonRequest(`https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${encodeURIComponent(token)}`, { method: 'GET' }); const values = Object.fromEntries((insight.data || []).map((item) => [item.name, Number(item.values?.[0]?.value || item.value || 0)])); stats[kind].posts += 1; stats[kind].views += values.views || 0; stats[kind].engagements += (values.likes || 0) + (values.replies || 0) + (values.reposts || 0) + (values.quotes || 0); }
+  const stats = Object.fromEntries(Object.keys(TEMPLATES).map((name) => [name, { posts: 0, recentPosts: 0, views: 0, engagements: 0 }]));
+  for (const post of list.data || []) { const timestamp = new Date(post.timestamp); if (timestamp < since) continue; const kind = detectTemplate(post.text); if (!kind) continue; const insight = await jsonRequest(`https://graph.threads.net/v1.0/${post.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${encodeURIComponent(token)}`, { method: 'GET' }); const values = Object.fromEntries((insight.data || []).map((item) => [item.name, Number(item.values?.[0]?.value || item.value || 0)])); stats[kind].posts += 1; if (timestamp >= recentSince) stats[kind].recentPosts += 1; stats[kind].views += values.views || 0; stats[kind].engagements += (values.likes || 0) + (values.replies || 0) + (values.reposts || 0) + (values.quotes || 0); }
   return stats;
 }
 
@@ -388,7 +395,7 @@ async function main() {
   } else if (reportOnly) { console.log('Threads 未設定のため成績なし'); return; }
   if (reportOnly) {
     if (!stats) { console.log('Threads 成績なし'); return; }
-    const table = ['| テンプレート | 投稿数 | 平均表示 | 平均反応率 |', '|---|---:|---:|---:|', ...Object.keys(TEMPLATES).map((name) => { const s = stats[name]; const rate = s.views ? s.engagements / s.views : 0; return `| ${name} | ${s.posts} | ${(s.views / (s.posts || 1)).toFixed(1)} | ${(rate * 100).toFixed(2)}% |`; })].join('\n');
+    const table = ['| テンプレート | 投稿数 | 直近7日 | 平均表示 | 平均反応率 |', '|---|---:|---:|---:|---:|', ...Object.keys(TEMPLATES).map((name) => { const s = stats[name]; const rate = s.views ? s.engagements / s.views : 0; return `| ${name} | ${s.posts} | ${s.recentPosts} | ${(s.views / (s.posts || 1)).toFixed(1)} | ${(rate * 100).toFixed(2)}% |`; })].join('\n');
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${table}\n`); else console.log(table);
     return;
   }
